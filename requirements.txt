@@ -5,3 +5,4 @@ tqdm
 scipy
 ipdb
 gdown
+midi2audio
