@@ -17,12 +17,13 @@ class Rating(discord.ui.View):
         self.value = None
         self.author = author
         self.user = None
+        self.is_skipped = False
 
     async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
         self.user = inter.user
         if inter.user != self.author:
-            # await inter.response.send_message(content="Warning : You're not the author.", ephemeral=True)
-            return True
+            await inter.response.send_message(content="Warning : You're not the votable user.", ephemeral=True)
+            return False
         return True    
 
     # When the confirm button is pressed, set the inner value to `True` and
@@ -56,6 +57,12 @@ class Rating(discord.ui.View):
     async def five(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message('You rated 5, thank you!', ephemeral=True)
         self.value = 5
+        self.stop()
+        
+    @discord.ui.button(label='Skip', style=discord.ButtonStyle.blurple)
+    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message('Vote skipped.', ephemeral=True)
+        self.is_skipped = True
         self.stop()
 
 def getfiles(out_dir):
@@ -94,10 +101,10 @@ class LofiTransformerPlayer(commands.Cog):
         embed=discord.Embed(title="Generated Ranking", description="Find the best one easily")
 
         if len(ranking) > 9:
-            ranking = ranking[:10]
+            ranking = ranking[:9]
         for id, score in ranking:
             embed.add_field(name=id, value=score)
-        embed.timestamp = datetime.datetime.utcnow()
+        embed.timestamp = datetime.datetime.now()
         embed.set_footer(text="Copy the id and use !play <id> to play the song!")
         
         await ctx.send(embed=embed)
@@ -152,6 +159,10 @@ class LofiTransformerPlayer(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
         await rating_view.wait()
+        if rating_view.is_skipped:
+            await vote_area.delete()
+            return
+
         rate = {"user": rating_view.user.name+"#"+rating_view.user.discriminator, "vote": rating_view.value}
         if id not in self.song_stats.keys():
             self.song_stats[id] = {
@@ -171,7 +182,7 @@ class LofiTransformerPlayer(commands.Cog):
             print("Rate recorded.")
         
         await vote_area.edit(embed=embed, view=None)
-        await ctx.send(f"{rating_view.user} has voted!")
+        # await ctx.send(f"{rating_view.user} has voted!")
 
     @commands.command()
     async def leave(self, ctx):
