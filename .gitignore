@@ -1,5 +1,5 @@
 __pycache__/
-lofi_dataset/
+*_dataset/
 exp/
 gen/
 runtime_stats.json
