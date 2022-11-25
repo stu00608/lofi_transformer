@@ -13,6 +13,7 @@ token = os.environ["BOT_TOKEN"]
 DAY_TIME = "06:00"
 NIGHT_TIME = "18:00"
 
+
 class Bot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
@@ -27,6 +28,30 @@ class Bot(commands.Bot):
             description=description
         )
 
+        self.day_avatar = "day_bocchi.jpg"
+        self.night_avatar = "night_bocchi.jpg"
+        
+        self.update_avatar()
+
+    async def on_ready(self):
+        print(f'Logged in as {self.user} (ID: {self.user.id})')
+        print('------')
+
+    def switch_avatar(self, is_day: True):
+        if is_day:
+            with open(self.day_avatar, 'rb') as image:
+                asyncio.get_event_loop().create_task(self.user.edit(avatar=image.read()))
+                # await self.user.edit(avatar=image.read())
+                print("Good morning!")
+                self.day_night_state = "day"
+        else:
+            with open(self.night_avatar, 'rb') as image:
+                asyncio.get_event_loop().create_task(self.user.edit(avatar=image.read()))
+                # await self.user.edit(avatar=image.read())
+                print("Good evening!")
+                self.day_night_state = "night"
+
+    def update_avatar(self):
         now = datetime.now()
         day_time = datetime.strptime(DAY_TIME, "%H:%M")
         night_time = datetime.strptime(NIGHT_TIME, "%H:%M")
@@ -34,16 +59,11 @@ class Bot(commands.Bot):
         night_time = now.replace(hour=night_time.hour, minute=night_time.minute)
         if day_time < now < night_time:
             self.day_night_state = "day"
-            print("day now")
         else:
             self.day_night_state = "night"
-            print("night now")
-
-    async def on_ready(self):
-        print(f'Logged in as {self.user} (ID: {self.user.id})')
-        print('------')
 
 bot = Bot()
+
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -54,22 +74,16 @@ async def on_voice_state_update(member, before, after):
         await voice_state.disconnect() # Disconnect the bot from the channel
 
 @tasks.loop(seconds=10)
-async def avator_update():
+async def avatar_update():
     if bot.is_closed():
         print("Bot is closed")
         return
 
     now = datetime.strftime(datetime.now(), '%H:%M')
     if now == DAY_TIME and bot.day_night_state == "night":
-        with open('day_bocchi.jpg', 'rb') as image:
-            await bot.user.edit(avatar=image.read())
-            print("Good morning!")
-            bot.day_night_state = "day"
+        bot.switch_avatar(is_day=True)
     elif now == NIGHT_TIME and bot.day_night_state == "day":
-        with open('night_bocchi.jpg', 'rb') as image:
-            await bot.user.edit(avatar=image.read())
-            print("Good evening!")
-            bot.day_night_state = "night"
+        bot.switch_avatar(is_day=False)
     
 async def load_extensions():
     for f in os.listdir("./cogs"):
@@ -78,7 +92,7 @@ async def load_extensions():
 
 async def main():
     async with bot:
-        avator_update.start()
+        avatar_update.start()
         await load_extensions()
         await bot.start(token)
 
