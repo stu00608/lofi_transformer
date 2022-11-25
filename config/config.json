@@ -1,0 +1,16 @@
+{
+    "model_selection": {
+        "mild-snowball-7": {
+            "description": "LoFi105, fourth finetune.",
+            "ckpt_path": "./exp/finetune_lofi/loss_8_params.pt",
+            "statistic_json_path": "./song_stats_fourth_finetune_8.json",
+            "gen_dir": "./gen/fourth_finetune_lofi"
+        },
+        "vivid-butterfly-9": {
+            "description": "LoFi85, sixth finetune.",
+            "ckpt_path": "./exp/sixth_finetune_lofi85/loss_10_params.pt",
+            "statistic_json_path": "./song_stats_sixth_finetune_10.json",
+            "gen_dir": "./gen/sixth_finetune_lofi85"
+        }
+    }
+}

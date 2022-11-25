@@ -76,15 +76,14 @@ def getfiles(out_dir):
     return filedict
 
 class LofiTransformerPlayer(commands.Cog):
-    def __init__(self, bot, ckpt_path, out_dir):
+    def __init__(self, bot):
         self.bot = bot
-        self.ckpt_path = ckpt_path
-        self.out_dir = out_dir
-        self.filedict = getfiles(out_dir)
+        self.config = json.load(open("./config/config.json"))
+        self.out_dir = self.config["model_selection"]["vivid-butterfly-9"]["gen_dir"]
+        self.filedict = getfiles(self.out_dir)
         self.lastfile = None
 
         self.song_stats = json.load(open("song_stats.json")) 
-
 
     @commands.command()
     async def list(self, ctx):
@@ -134,8 +133,8 @@ class LofiTransformerPlayer(commands.Cog):
         if id is None:
             hint_msg = await ctx.send("Generating...", file=discord.File("img/bocchi.gif"))
             path = generate_song(
-                ckpt_path=self.ckpt_path,
-                out_dir=self.out_dir
+                ckpt_path=self.config["model_selection"]["vivid-butterfly-9"]["ckpt_path"],
+                out_dir=self.config["model_selection"]["vivid-butterfly-9"]["gen_dir"]
             )[0]
             mid_path, mp3_path = path
             await self.update_dict(ctx)
@@ -208,8 +207,4 @@ class LofiTransformerPlayer(commands.Cog):
 
 
 async def setup(client):
-    await client.add_cog(LofiTransformerPlayer(
-        client,
-        ckpt_path="./exp/fourth_finetune_lofi/loss_8_params.pt",
-        out_dir="gen/fourth_finetune_lofi"
-    ))
+    await client.add_cog(LofiTransformerPlayer(client))
