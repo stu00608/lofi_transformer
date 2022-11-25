@@ -7,3 +7,5 @@ ipdb
 gdown
 midi2audio
 chorder
+pandas
+wandb
