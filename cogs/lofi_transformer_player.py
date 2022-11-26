@@ -82,13 +82,17 @@ class LofiTransformerPlayer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.load_config()
-        self.current_model = self.config["current_model"]
+        self.select_model(self.config["current_model"])
         self.load_stats()
-        # TODO: Update these three var when current_model update.
+        self.lastfile = None
+
+    def select_model(self, model):
+        self.config["current_model"] = model
+        self.save_config()
+        self.current_model = model
         self.current_model_ckpt = self.config["model_selection"][self.current_model]["ckpt_path"]
         self.out_dir = self.config["model_selection"][self.current_model]["gen_dir"]
         self.filedict = getfiles(self.out_dir)
-        self.lastfile = None
     
     def load_stats(self):
         assert (self.config != None) and (self.current_model != None)
