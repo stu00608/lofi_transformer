@@ -28,8 +28,8 @@ class Bot(commands.Bot):
             description=description
         )
 
-        self.day_avatar = "day_bocchi.jpg"
-        self.night_avatar = "night_bocchi.jpg"
+        self.day_avatar = "img/day_bocchi.jpg"
+        self.night_avatar = "img/night_bocchi.jpg"
         
         self.update_avatar()
 
