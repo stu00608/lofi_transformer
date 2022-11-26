@@ -68,6 +68,7 @@ class Rating(discord.ui.View):
         self.stop()
 
 def getfiles(out_dir):
+    os.makedirs(out_dir, exist_ok=True)
     filenames = os.listdir(out_dir)
     filenames = [filename.split(".")[0] for filename in filenames if filename.endswith(".mid")]
     filedict = {}
@@ -96,7 +97,10 @@ class LofiTransformerPlayer(commands.Cog):
     
     def load_stats(self):
         assert (self.config != None) and (self.current_model != None)
-        stats_path = self.config["model_selection"][self.current_model]["statistic_json_path"]
+        stats_path = os.path.join(
+                self.config["model_selection"][self.current_model]["gen_dir"], 
+                self.config["model_selection"][self.current_model]["statistic_json_name"]
+        )
         if(not os.path.exists(stats_path)):
             self.song_stats = {}
         else:
@@ -104,7 +108,10 @@ class LofiTransformerPlayer(commands.Cog):
     
     def save_stats(self):
         assert (self.config != None) and (self.current_model != None)
-        stats_path = self.config["model_selection"][self.current_model]["statistic_json_path"]
+        stats_path = os.path.join(
+                self.config["model_selection"][self.current_model]["gen_dir"], 
+                self.config["model_selection"][self.current_model]["statistic_json_name"]
+        )
         stats = json.dumps(self.song_stats, indent=4)
         with open(stats_path, "w") as j:
             j.write(stats)
@@ -116,6 +123,30 @@ class LofiTransformerPlayer(commands.Cog):
         config = json.dumps(self.config, indent=4)
         with open(CONFIG_PATH, "w") as j:
             j.write(config)
+    
+    @commands.command()
+    async def load(self, ctx, model=None):
+        """Load specific model to generate"""
+        if model:
+            self.select_model(model)
+            await ctx.send(f"Model {model} loaded!")
+        else:
+            # Show selectable models.
+            model_list = self.config["model_selection"].keys()
+
+            embed=discord.Embed(
+                title="Model List", 
+                description=f"Here is all model you can choose. Current model is **{self.current_model}**"
+            )
+            if len(model_list) > 9:
+                model_list = model_list[:9]
+            for model in model_list:
+                embed.add_field(name=model, value=self.config["model_selection"][model]["description"])
+            
+            embed.timestamp = datetime.datetime.now()
+            embed.set_footer(text="Copy the model name and use \"!load <model name>\" to select the model!")
+
+            await ctx.send(embed=embed)
 
     @commands.command()
     async def list(self, ctx):
@@ -137,7 +168,7 @@ class LofiTransformerPlayer(commands.Cog):
         for id, score in ranking:
             embed.add_field(name=id, value=score)
         embed.timestamp = datetime.datetime.now()
-        embed.set_footer(text="Copy the id and use !play <id> to play the song!")
+        embed.set_footer(text="Copy the id and use \"!play <id>\" to play the song!")
         
         await ctx.send(embed=embed)
         

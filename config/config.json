@@ -3,15 +3,39 @@
         "mild-snowball-7": {
             "description": "LoFi105, fourth finetune.",
             "ckpt_path": "./exp/finetune_lofi/loss_8_params.pt",
-            "statistic_json_path": "./song_stats_fourth_finetune_8.json",
+            "statistic_json_name": "song_stats.json",
             "gen_dir": "./gen/fourth_finetune_lofi"
+        },
+        "vivid-butterfly-9-L8": {
+            "description": "LoFi85, sixth finetune, Loss 8.",
+            "ckpt_path": "./exp/sixth_finetune_lofi85/loss_8_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/sixth_finetune_lofi85_L8"
         },
         "vivid-butterfly-9-L10": {
             "description": "LoFi85, sixth finetune, Loss 10.",
             "ckpt_path": "./exp/sixth_finetune_lofi85/loss_10_params.pt",
-            "statistic_json_path": "./song_stats_sixth_finetune_10.json",
+            "statistic_json_name": "song_stats.json",
             "gen_dir": "./gen/sixth_finetune_lofi85_L10"
+        },
+        "vivid-butterfly-9-L15": {
+            "description": "LoFi85, sixth finetune, Loss 15.",
+            "ckpt_path": "./exp/sixth_finetune_lofi85/loss_15_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/sixth_finetune_lofi85_L15"
+        },
+        "vivid-butterfly-9-L20": {
+            "description": "LoFi85, sixth finetune, Loss 20.",
+            "ckpt_path": "./exp/sixth_finetune_lofi85/loss_20_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/sixth_finetune_lofi85_L20"
+        },
+        "vivid-butterfly-9-L25": {
+            "description": "LoFi85, sixth finetune, Loss 25.",
+            "ckpt_path": "./exp/sixth_finetune_lofi85/loss_25_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/sixth_finetune_lofi85_L25"
         }
     },
-    "current_model": "vivid-butterfly-9-L10"
+    "current_model": "mild-snowball-7"
 }
