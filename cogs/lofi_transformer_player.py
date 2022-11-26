@@ -10,6 +10,8 @@ from time import sleep
 from discord.ext import commands
 from generate import generate_song
 
+CONFIG_PATH = "./config/config.json"
+
 # Define a simple View that gives us a confirmation menu
 class Rating(discord.ui.View):
     def __init__(self, author: typing.Union[discord.Member, discord.User]):
@@ -76,14 +78,40 @@ def getfiles(out_dir):
     return filedict
 
 class LofiTransformerPlayer(commands.Cog):
+
     def __init__(self, bot):
         self.bot = bot
-        self.config = json.load(open("./config/config.json"))
-        self.out_dir = self.config["model_selection"]["vivid-butterfly-9"]["gen_dir"]
+        self.load_config()
+        self.current_model = self.config["current_model"]
+        self.load_stats()
+        # TODO: Update these three var when current_model update.
+        self.current_model_ckpt = self.config["model_selection"][self.current_model]["ckpt_path"]
+        self.out_dir = self.config["model_selection"][self.current_model]["gen_dir"]
         self.filedict = getfiles(self.out_dir)
         self.lastfile = None
+    
+    def load_stats(self):
+        assert (self.config != None) and (self.current_model != None)
+        stats_path = self.config["model_selection"][self.current_model]["statistic_json_path"]
+        if(not os.path.exists(stats_path)):
+            self.song_stats = {}
+        else:
+            self.song_stats = json.load(open(stats_path))
+    
+    def save_stats(self):
+        assert (self.config != None) and (self.current_model != None)
+        stats_path = self.config["model_selection"][self.current_model]["statistic_json_path"]
+        stats = json.dumps(self.song_stats, indent=4)
+        with open(stats_path, "w") as j:
+            j.write(stats)
+    
+    def load_config(self):
+        self.config = json.load(open(CONFIG_PATH))
 
-        self.song_stats = json.load(open("song_stats.json")) 
+    def save_config(self):
+        config = json.dumps(self.config, indent=4)
+        with open(CONFIG_PATH, "w") as j:
+            j.write(config)
 
     @commands.command()
     async def list(self, ctx):
@@ -97,7 +125,8 @@ class LofiTransformerPlayer(commands.Cog):
             ranking[key] = score
         ranking = sorted(ranking.items(),key=lambda x:x[1], reverse=True)
 
-        embed=discord.Embed(title="Generated Ranking", description="Find the best one easily")
+        embed=discord.Embed(title="model", description=self.current_model)
+        embed.set_author(name="Generated Song Ranking")
 
         if len(ranking) > 9:
             ranking = ranking[:9]
@@ -133,8 +162,8 @@ class LofiTransformerPlayer(commands.Cog):
         if id is None:
             hint_msg = await ctx.send("Generating...", file=discord.File("img/bocchi.gif"))
             path = generate_song(
-                ckpt_path=self.config["model_selection"]["vivid-butterfly-9"]["ckpt_path"],
-                out_dir=self.config["model_selection"]["vivid-butterfly-9"]["gen_dir"]
+                ckpt_path=self.current_model_ckpt,
+                out_dir=self.out_dir
             )[0]
             mid_path, mp3_path = path
             await self.update_dict(ctx)
@@ -152,7 +181,9 @@ class LofiTransformerPlayer(commands.Cog):
         source = discord.FFmpegPCMAudio(source=mp3_path)
         embed=discord.Embed(title="Now playing...", description=id, color=0xffc7cd)
         embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
+        embed.add_field(name="model", value=self.current_model, inline=True)
         embed.set_footer(text="Please rate the song ⏬")
+        embed.timestamp = datetime.datetime.now()
         rating_view = Rating(ctx.author)
         vote_area = await ctx.send(embed=embed, view=rating_view)
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
@@ -165,6 +196,7 @@ class LofiTransformerPlayer(commands.Cog):
         rate = {"user": rating_view.user.name+"#"+rating_view.user.discriminator, "vote": rating_view.value}
         if id not in self.song_stats.keys():
             self.song_stats[id] = {
+                "model": self.current_model,
                 "path": mp3_path,
                 "view": 1,
                 "rate": [rate],
@@ -174,11 +206,7 @@ class LofiTransformerPlayer(commands.Cog):
             self.song_stats[id]["view"] += 1
             self.song_stats[id]["rate"].append(rate)
         
-        output_json = json.dumps(self.song_stats, indent=4)
-
-        with open("song_stats.json", "w") as j:
-            j.write(output_json)
-            print("Rate recorded.")
+        self.save_stats()
         
         await vote_area.edit(embed=embed, view=None)
         # await ctx.send(f"{rating_view.user} has voted!")
