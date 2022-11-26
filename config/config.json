@@ -6,11 +6,12 @@
             "statistic_json_path": "./song_stats_fourth_finetune_8.json",
             "gen_dir": "./gen/fourth_finetune_lofi"
         },
-        "vivid-butterfly-9": {
-            "description": "LoFi85, sixth finetune.",
+        "vivid-butterfly-9-L10": {
+            "description": "LoFi85, sixth finetune, Loss 10.",
             "ckpt_path": "./exp/sixth_finetune_lofi85/loss_10_params.pt",
             "statistic_json_path": "./song_stats_sixth_finetune_10.json",
-            "gen_dir": "./gen/sixth_finetune_lofi85"
+            "gen_dir": "./gen/sixth_finetune_lofi85_L10"
         }
-    }
+    },
+    "current_model": "vivid-butterfly-9-L10"
 }
