@@ -13,9 +13,8 @@ from models import TransformerModel, network_paras
 from utils import write_midi, get_random_string
 
 DATASET_PATH = "./lofi_dataset"
-CKPT_PATH = "./exp/finetune_lofi/loss_8_params.pt"
 
-def generate_song(ckpt_path=CKPT_PATH, num_songs=1, out_dir="gen"):
+def generate_song(ckpt_path, num_songs=1, out_dir="gen"):
     os.makedirs(out_dir, exist_ok=True)
 
     dictionary = pickle.load(open(os.path.join(DATASET_PATH, "dictionary.pkl"), 'rb'))
@@ -35,9 +34,9 @@ def generate_song(ckpt_path=CKPT_PATH, num_songs=1, out_dir="gen"):
 
     # load weight
     try:
-        net.load_state_dict(torch.load(CKPT_PATH))
+        net.load_state_dict(torch.load(ckpt_path))
     except:
-        state_dict = torch.load(CKPT_PATH)
+        state_dict = torch.load(ckpt_path)
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
             name = k[7:] 
