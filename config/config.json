@@ -37,5 +37,6 @@
             "gen_dir": "./gen/sixth_finetune_lofi85_L25"
         }
     },
-    "current_model": "mild-snowball-7"
+    "current_model": "mild-snowball-7",
+    "instrument": 24
 }

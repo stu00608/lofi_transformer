@@ -3,88 +3,15 @@ sys.path.append("..")
 import os
 import json
 import discord
-import typing
 import datetime
 import numpy as np
-from time import sleep
-from pydub import AudioSegment
 from discord.ext import commands
 from generate import generate_song
+from bot_utils.utils import get_audio_time, getfiles
+from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView
 
 CONFIG_PATH = "./config/config.json"
 
-# Define a simple View that gives us a confirmation menu
-class Rating(discord.ui.View):
-    def __init__(self, author: typing.Union[discord.Member, discord.User]):
-        super().__init__()
-        self.value = None
-        self.author = author
-        self.user = None
-        self.is_skipped = False
-
-    async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
-        self.user = inter.user
-        if inter.user != self.author:
-            await inter.response.send_message(content="Warning : You're not the votable user.", ephemeral=True)
-            return False
-        return True    
-
-    # When the confirm button is pressed, set the inner value to `True` and
-    # stop the View from listening to more input.
-    # We also send the user an ephemeral message that we're confirming their choice.
-    @discord.ui.button(label='1', style=discord.ButtonStyle.grey)
-    async def one(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 1, thank you!', ephemeral=True)
-        self.value = 1
-        self.stop()
-
-    @discord.ui.button(label='2', style=discord.ButtonStyle.grey)
-    async def two(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 2, thank you!', ephemeral=True)
-        self.value = 2
-        self.stop()
-
-    @discord.ui.button(label='3', style=discord.ButtonStyle.grey)
-    async def three(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 3, thank you!', ephemeral=True)
-        self.value = 3
-        self.stop()
-
-    @discord.ui.button(label='4', style=discord.ButtonStyle.grey)
-    async def four(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 4, thank you!', ephemeral=True)
-        self.value = 4
-        self.stop()
-
-    @discord.ui.button(label='5', style=discord.ButtonStyle.grey)
-    async def five(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 5, thank you!', ephemeral=True)
-        self.value = 5
-        self.stop()
-        
-    @discord.ui.button(label='Skip', style=discord.ButtonStyle.blurple)
-    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('Vote skipped.', ephemeral=True)
-        self.is_skipped = True
-        self.stop()
-
-def getfiles(out_dir):
-    os.makedirs(out_dir, exist_ok=True)
-    filenames = os.listdir(out_dir)
-    filenames = [filename.split(".")[0] for filename in filenames if filename.endswith(".mid")]
-    filedict = {}
-    for filename in filenames:
-        mid_path = os.path.join(out_dir, filename+".mid")
-        mp3_path = os.path.join(out_dir, filename+".mp3")
-        filedict[filename] = [mid_path, mp3_path]
-    return filedict
-
-def get_audio_time(file_path):
-    """Get mp3 audio length in %m:%s format."""
-    duration = AudioSegment.from_mp3(file_path).duration_seconds
-    minute = int(duration // 60)
-    second = int(duration % 60)
-    return f"{minute:02d}:{second:02d}"
 
 class LofiTransformerPlayer(commands.Cog):
 
@@ -260,6 +187,16 @@ class LofiTransformerPlayer(commands.Cog):
     async def leave(self, ctx):
         """Stops and disconnects the bot from voice"""
         await ctx.voice_client.disconnect()
+    
+    @commands.command()
+    async def instrument(self, ctx):
+        """Show a dropdown selection to set the MIDI render instrument program number."""
+        view = InstrumentSelectDropdownView(ctx.author)
+        await ctx.send("Instrument Setting", view=view)
+
+        await view.wait()
+        self.config["instrument"] = int(view.value)
+        self.save_config()
 
     @play.before_invoke
     async def ensure_voice(self, ctx):
@@ -276,8 +213,6 @@ class LofiTransformerPlayer(commands.Cog):
     @get.before_invoke
     async def update_dict(self, ctx):
         self.filedict = getfiles(self.out_dir)
-    
-
 
 async def setup(client):
     await client.add_cog(LofiTransformerPlayer(client))
