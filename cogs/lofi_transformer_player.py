@@ -79,6 +79,13 @@ def getfiles(out_dir):
         filedict[filename] = [mid_path, mp3_path]
     return filedict
 
+def get_audio_time(file_path):
+    """Get mp3 audio length in %m:%s format."""
+    duration = AudioSegment.from_mp3(file_path).duration_seconds
+    minute = int(duration // 60)
+    second = int(duration % 60)
+    return f"{minute:02d}:{second:02d}"
+
 class LofiTransformerPlayer(commands.Cog):
 
     def __init__(self, bot):
@@ -124,7 +131,7 @@ class LofiTransformerPlayer(commands.Cog):
         config = json.dumps(self.config, indent=4)
         with open(CONFIG_PATH, "w") as j:
             j.write(config)
-    
+        
     @commands.command()
     async def load(self, ctx, model=None):
         """Load specific model to generate"""
@@ -214,14 +221,11 @@ class LofiTransformerPlayer(commands.Cog):
         id = mp3_path.split("/")[-1].split(".")[0]
         await hint_msg.delete()
 
-        duration = AudioSegment.from_mp3(mp3_path).duration_seconds
-        minute = int(duration // 60)
-        second = int(duration % 60)
         source = discord.FFmpegPCMAudio(source=mp3_path)
         embed=discord.Embed(title="Now playing...", color=0xffc7cd)
         embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
         embed.add_field(name="id", value=id, inline=False)
-        embed.add_field(name="time", value=f"{minute:02d}:{second:02d}", inline=False)
+        embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)
         embed.add_field(name="model", value=self.current_model, inline=False)
         embed.set_footer(text="Please rate the song ⏬")
         embed.timestamp = datetime.datetime.now()
