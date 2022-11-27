@@ -52,7 +52,7 @@ def generate_song(ckpt_path=CKPT_PATH, num_songs=1, out_dir="gen"):
         res = None
         if n_token == 8:
             res, _ = net.inference_from_scratch(dictionary, 0, n_token)
-            while res is None:
+            if res is None:
                 continue
 
         filename = get_random_string(length=10)
@@ -60,7 +60,7 @@ def generate_song(ckpt_path=CKPT_PATH, num_songs=1, out_dir="gen"):
         wav_file_path = os.path.join(out_dir, filename+".wav")
         mp3_file_path = os.path.join(out_dir, filename+".mp3")
         # Get midi object.
-        midi_obj = write_midi(res, out_file_path, word2event)
+        midi_obj = write_midi(res, out_file_path, word2event, dump=False)
 
         # Only take first tempo change.
         midi_obj.tempo_changes = midi_obj.tempo_changes[:2]
