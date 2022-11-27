@@ -55,9 +55,9 @@ def generate_song(instrument, ckpt_path, num_songs=1, out_dir="gen"):
                 continue
 
         filename = get_random_string(length=10)
-        out_file_path = os.path.join(out_dir, filename+".mid")
-        wav_file_path = os.path.join(out_dir, filename+".wav")
-        mp3_file_path = os.path.join(out_dir, filename+".mp3")
+        out_file_path = os.path.join(out_dir, filename+f"_{instrument}"+".mid")
+        wav_file_path = os.path.join(out_dir, filename+f"_{instrument}"+".wav")
+        mp3_file_path = os.path.join(out_dir, filename+f"_{instrument}"+".mp3")
         # Get midi object.
         midi_obj = write_midi(res, out_file_path, word2event, dump=False)
 

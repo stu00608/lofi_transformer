@@ -2,12 +2,13 @@ import sys
 sys.path.append("..")
 import os
 import json
+import pretty_midi
 import discord
 import datetime
 import numpy as np
 from discord.ext import commands
 from generate import generate_song
-from bot_utils.utils import get_audio_time, getfiles
+from bot_utils.utils import get_audio_time, getfiles, midi_program_to_emoji
 from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView
 
 CONFIG_PATH = "./config/config.json"
@@ -147,13 +148,15 @@ class LofiTransformerPlayer(commands.Cog):
             song = self.filedict[id]
             mid_path, mp3_path = song
         id = mp3_path.split("/")[-1].split(".")[0]
+        code, instrument = id.split("_")
         await hint_msg.delete()
 
         source = discord.FFmpegPCMAudio(source=mp3_path)
-        embed=discord.Embed(title="Now playing...", color=0xffc7cd)
+        embed=discord.Embed(title=f"Now playing... {midi_program_to_emoji[int(instrument)]}", color=0xffc7cd)
         embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
         embed.add_field(name="id", value=id, inline=False)
         embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)
+        embed.add_field(name="instrument", value=pretty_midi.program_to_instrument_name(int(instrument)), inline=False)
         embed.add_field(name="model", value=self.current_model, inline=False)
         embed.set_footer(text="Please rate the song ⏬")
         embed.timestamp = datetime.datetime.now()
@@ -167,8 +170,12 @@ class LofiTransformerPlayer(commands.Cog):
             return
 
         rate = {"user": rating_view.user.name+"#"+rating_view.user.discriminator, "vote": rating_view.value}
+
         if id not in self.song_stats.keys():
             self.song_stats[id] = {
+                "code": code,
+                "time": get_audio_time(mp3_path),
+                "instrument": int(instrument),
                 "model": self.current_model,
                 "path": mp3_path,
                 "view": 1,
