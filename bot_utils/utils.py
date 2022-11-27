@@ -1,6 +1,12 @@
 import os
 from pydub import AudioSegment
 
+midi_program_to_emoji = {
+    0: '🎹',
+    4: '🎹',
+    24: '🎸',
+}
+
 def getfiles(out_dir):
     os.makedirs(out_dir, exist_ok=True)
     filenames = os.listdir(out_dir)

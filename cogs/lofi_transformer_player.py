@@ -132,6 +132,7 @@ class LofiTransformerPlayer(commands.Cog):
         if id is None:
             hint_msg = await ctx.send("Generating...", file=discord.File("img/bocchi.gif"))
             path = generate_song(
+                instrument=self.config["instrument"],
                 ckpt_path=self.current_model_ckpt,
                 out_dir=self.out_dir
             )[0]

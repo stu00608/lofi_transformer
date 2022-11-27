@@ -14,7 +14,7 @@ from utils import write_midi, get_random_string
 
 DATASET_PATH = "./lofi_dataset"
 
-def generate_song(ckpt_path, num_songs=1, out_dir="gen"):
+def generate_song(instrument, ckpt_path, num_songs=1, out_dir="gen"):
     os.makedirs(out_dir, exist_ok=True)
 
     dictionary = pickle.load(open(os.path.join(DATASET_PATH, "dictionary.pkl"), 'rb'))
@@ -66,7 +66,7 @@ def generate_song(ckpt_path, num_songs=1, out_dir="gen"):
         current_bpm = midi_obj.tempo_changes[-1].tempo
 
         # Change the channel instrument.
-        midi_obj.instruments[0].program = 5 # Electrical Piano 1
+        midi_obj.instruments[0].program = instrument
 
         # output midi.
         midi_obj.dump(out_file_path)

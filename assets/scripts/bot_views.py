@@ -3,6 +3,9 @@ sys.path.append("..")
 import discord
 import typing
 import pretty_midi
+from bot_utils.utils import midi_program_to_emoji
+
+instrument_list = [0, 4, 24]
 
 class InstrumentSelectDropdownView(discord.ui.View):
     def __init__(self, author: typing.Union[discord.Member, discord.User]):
@@ -12,11 +15,10 @@ class InstrumentSelectDropdownView(discord.ui.View):
     
     @discord.ui.select(
         placeholder="Select an instrument to render generated midi.",
-        options=[
-            discord.SelectOption(label=pretty_midi.program_to_instrument_name(0), value=0, emoji="🎹",description="MIDI Program: 0"),
-            discord.SelectOption(label=pretty_midi.program_to_instrument_name(4), value=4, emoji="🎹",description="MIDI Program: 4"),
-            discord.SelectOption(label=pretty_midi.program_to_instrument_name(24), value=24, emoji="🎸",description="MIDI Program: 24")
-        ]
+        options = [discord.SelectOption(
+                label=pretty_midi.program_to_instrument_name(program), 
+                value=program, emoji=midi_program_to_emoji[program],
+                description=f"MIDI Program: {program}") for program in instrument_list]
     )
     async def select_callback(self, interaction, select):
         await interaction.response.send_message(content=f"{select.values[0]} set!",ephemeral=False)
