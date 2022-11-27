@@ -20,7 +20,6 @@ class LofiTransformerPlayer(commands.Cog):
         self.bot = bot
         self.load_config()
         self.select_model(self.config["current_model"])
-        self.load_stats()
         self.lastfile = None
 
     def select_model(self, model):
@@ -30,6 +29,8 @@ class LofiTransformerPlayer(commands.Cog):
         self.current_model_ckpt = self.config["model_selection"][self.current_model]["ckpt_path"]
         self.out_dir = self.config["model_selection"][self.current_model]["gen_dir"]
         self.filedict = getfiles(self.out_dir)
+
+        self.load_stats()
     
     def load_stats(self):
         assert (self.config != None) and (self.current_model != None)
