@@ -10,6 +10,8 @@ from generate import generate_song
 
 token = os.environ["BOT_TOKEN"]
 
+discord.utils.setup_logging()
+
 DAY_TIME = "06:00"
 NIGHT_TIME = "18:00"
 
@@ -97,3 +99,4 @@ async def main():
         await bot.start(token)
 
 asyncio.run(main())
+    
