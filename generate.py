@@ -84,6 +84,8 @@ def render_midi(instrument, out_dir, filename, soundfont="./soundfonts/A320U.sf2
     # Change the channel instrument.
     midi_obj.instruments[0].program = instrument
 
+    midi_obj.dump(mid_file_path)
+
     # output wav.
     midi_synth.midi_to_audio(mid_file_path, wav_file_path)
 
