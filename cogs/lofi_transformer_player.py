@@ -229,8 +229,11 @@ class LofiTransformerPlayer(commands.Cog):
     @commands.command()
     async def instrument(self, ctx):
         """Show a dropdown selection to set the MIDI render instrument program number."""
+        current_instrument = self.config["instrument"]
+        emoji = get_instrument_emoji(current_instrument)
+
         view = InstrumentSelectDropdownView(ctx.author)
-        await ctx.send("Instrument Setting", view=view)
+        await ctx.send(f"Instrument Setting.\nCurrent instrument is {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=view)
 
         await view.wait()
         self.config["instrument"] = int(view.value)
