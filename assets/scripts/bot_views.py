@@ -57,6 +57,7 @@ class Rating(discord.ui.View):
         self.author = author
         self.user = None
         self.is_skipped = False
+        self.is_rerender = False
 
     async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
         self.user = inter.user
@@ -97,8 +98,13 @@ class Rating(discord.ui.View):
         await interaction.response.send_message('You rated 5, thank you!', ephemeral=True)
         self.value = 5
         self.stop()
+
+    @discord.ui.button(label='Re-render', style=discord.ButtonStyle.green)
+    async def rerender(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.is_rerender = True
+        self.stop()
         
-    @discord.ui.button(label='Skip', style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label='Skip', style=discord.ButtonStyle.red)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message('Vote skipped.', ephemeral=True)
         self.is_skipped = True
