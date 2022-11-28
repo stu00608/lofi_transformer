@@ -118,11 +118,11 @@ class LofiTransformerPlayer(commands.Cog):
         await ctx.send(files=songs)
 
     @commands.command()
-    async def play(self, ctx, id=None, instrument=None):
+    async def play(self, ctx, id=None):
         """Plays a file from the local filesystem"""
 
         #TODO: Merge with a get function.
-        if id is None and instrument is None:   # !play <blank> <blank>
+        if id is None:
             instrument = self.config["instrument"]
             hint_msg = await ctx.send("Generating...", file=discord.File("img/bocchi.gif"))
             path = generate_song(
@@ -133,30 +133,76 @@ class LofiTransformerPlayer(commands.Cog):
             mid_path, mp3_path = path
             await self.update_dict(ctx)
             self.lastfile = path
-        elif instrument is None:                # !play id <blank>
-            # TODO: if user only gives code, should return if there is an existing audio.
-            id_check = id.split("_")
-            if len(id_check) < 2 or len(id_check) > 2:
-                await ctx.send("ID format error.")
-                await ctx.voice_client.disconnect()
-                return
-            elif id not in self.filedict.keys():
-                await ctx.send("Files not found.")
-                await ctx.voice_client.disconnect()
-                return
-            else:
-                hint_msg = await ctx.send(f"Play file...")
-                song = self.filedict[id]
-                mid_path, mp3_path = song
-        else:                                   # !play id instrument (Render new file or play existed one.)
-            complete_id = id+"_"+instrument
+        elif id not in self.filedict.keys():
+            await ctx.send("Files not found.")
+            return
+        else:
+            hint_msg = await ctx.send(f"Play file...")
+            song = self.filedict[id]
+            mid_path, mp3_path = song
+        await hint_msg.delete()
+        await self.play_command(ctx, mp3_path)
+
+    @commands.command()
+    async def leave(self, ctx):
+        """Stops and disconnects the bot from voice"""
+        await ctx.voice_client.disconnect()
+    
+    @commands.command()
+    async def instrument(self, ctx):
+        """Show a dropdown selection to set the MIDI render instrument program number."""
+        current_instrument = self.config["instrument"]
+        emoji = get_instrument_emoji(current_instrument)
+        view = self.get_instrument_dropdown_view(ctx)
+        await ctx.send(f"Instrument Setting.\nCurrent instrument is {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=view)
+
+        await view.wait()
+        self.config["instrument"] = int(view.value)
+        self.save_config()
+
+    
+    async def play_music(self, ctx, id, mp3_path, instrument):
+        current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
+        source = discord.FFmpegPCMAudio(source=mp3_path)
+        vote_embed=discord.Embed(title=f"Now playing... {get_instrument_emoji(instrument)}", color=0xffc7cd)
+        vote_embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
+        vote_embed.add_field(name="id", value=id, inline=False)
+        vote_embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)
+        vote_embed.add_field(name="instrument", value=pretty_midi.program_to_instrument_name(instrument), inline=False)
+        vote_embed.add_field(name="model", value=f"{current_model_emoji} {self.current_model}", inline=False)
+        vote_embed.set_footer(text="Please rate the song ⏬")
+        vote_embed.timestamp = datetime.datetime.now()
+        rating_view = Rating(ctx.author)
+        vote_area = await ctx.send(embed=vote_embed, view=rating_view)
+        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+        return vote_area, vote_embed, rating_view
+    
+    async def play_command(self, ctx, mp3_path):
+        if ctx.voice_client.is_playing():
+            ctx.voice_client.stop()
+        id = mp3_path.split("/")[-1].split(".")[0]
+        code, instrument = id.split("_")
+        instrument = int(instrument)
+        vote_area, embed, rating_view = await self.play_music(ctx, id, mp3_path, instrument)
+        await rating_view.wait()
+        if rating_view.is_skipped:
+            await vote_area.edit(embed=embed, view=None)
+            return
+        elif rating_view.is_rerender:
+            view = self.get_instrument_dropdown_view(ctx)
+            await vote_area.edit(embed=embed, view=view)
+
+            await view.wait()
+            instrument = int(view.value)
+            complete_id = code+"_"+str(instrument)
+            print(complete_id)
             if complete_id not in self.filedict.keys():
                 # Need to render new one.
                 hint_msg = await ctx.send(f"Rendering file to {get_instrument_emoji(int(instrument))}...")
                 path = render_midi(
                     instrument=int(instrument),
                     out_dir=self.out_dir,
-                    filename=id
+                    filename=code
                 )
                 mid_path, mp3_path = path
                 await self.update_dict(ctx)
@@ -167,28 +213,10 @@ class LofiTransformerPlayer(commands.Cog):
                 song = self.filedict[complete_id]
                 mid_path, mp3_path = song
                 id = complete_id
+            
+            await hint_msg.delete()
 
-        id = mp3_path.split("/")[-1].split(".")[0]
-        code, instrument = id.split("_")
-        await hint_msg.delete()
-
-        current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
-        source = discord.FFmpegPCMAudio(source=mp3_path)
-        embed=discord.Embed(title=f"Now playing... {get_instrument_emoji(int(instrument))}", color=0xffc7cd)
-        embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
-        embed.add_field(name="id", value=id, inline=False)
-        embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)
-        embed.add_field(name="instrument", value=pretty_midi.program_to_instrument_name(int(instrument)), inline=False)
-        embed.add_field(name="model", value=f"{current_model_emoji} {self.current_model}", inline=False)
-        embed.set_footer(text="Please rate the song ⏬")
-        embed.timestamp = datetime.datetime.now()
-        rating_view = Rating(ctx.author)
-        vote_area = await ctx.send(embed=embed, view=rating_view)
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
-
-        await rating_view.wait()
-        if rating_view.is_skipped:
-            await vote_area.edit(embed=embed, view=None)
+            await self.play_command(ctx, mp3_path)
             return
 
         rate = {"user": rating_view.user.name+"#"+rating_view.user.discriminator, "vote": rating_view.value}
@@ -211,23 +239,9 @@ class LofiTransformerPlayer(commands.Cog):
         self.save_stats()
         
         await vote_area.edit(embed=embed, view=None)
-        # await ctx.send(f"{rating_view.user} has voted!")
 
-    @commands.command()
-    async def leave(self, ctx):
-        """Stops and disconnects the bot from voice"""
-        await ctx.voice_client.disconnect()
-    
-    @commands.command()
-    async def instrument(self, ctx):
-        """Show a dropdown selection to set the MIDI render instrument program number."""
-        emoji = get_instrument_emoji(self.config["instrument"])
-        view = self.get_instrument_dropdown_view(ctx)
-        await ctx.send(f"Instrument Setting.\nCurrent instrument is {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=view)
-
-        await view.wait()
-        self.config["instrument"] = int(view.value)
-        self.save_config()
+    def get_instrument_dropdown_view(self, ctx):
+        return InstrumentSelectDropdownView(ctx.author)
 
     @play.before_invoke
     async def ensure_voice(self, ctx):
@@ -244,10 +258,6 @@ class LofiTransformerPlayer(commands.Cog):
     @get.before_invoke
     async def update_dict(self, ctx):
         self.filedict = getfiles(self.out_dir)
-    
-    def get_instrument_dropdown_view(self, ctx):
-        current_instrument = self.config["instrument"]
-        return InstrumentSelectDropdownView(ctx.author)
 
 async def setup(client):
     await client.add_cog(LofiTransformerPlayer(client))
