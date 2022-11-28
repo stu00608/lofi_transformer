@@ -9,7 +9,7 @@ import numpy as np
 from discord.ext import commands
 from generate import generate_song, render_midi
 from bot_utils.utils import get_audio_time, getfiles, get_instrument_emoji
-from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView
+from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView, ModelSelectDropdownView
 
 CONFIG_PATH = "./config/config.json"
 
@@ -62,28 +62,19 @@ class LofiTransformerPlayer(commands.Cog):
             j.write(config)
         
     @commands.command()
-    async def load(self, ctx, model=None):
-        """Load specific model to generate"""
-        if model:
-            self.select_model(model)
-            await ctx.send(f"Model {model} loaded!")
-        else:
-            # Show selectable models.
-            model_list = self.config["model_selection"].keys()
+    async def model(self, ctx):
+        """Show a dropdown selection to set the model to generate song."""
+        current_model = self.config["current_model"]
+        current_model_emoji = self.config["model_selection"][current_model]["emoji"]
+        model_list = self.config["model_selection"].keys()
+        model_description_dict = {m: self.config["model_selection"][m]["description"] for m in model_list}
+        model_emoji_dict = {m: self.config["model_selection"][m]["emoji"] for m in model_list}
 
-            embed=discord.Embed(
-                title="Model List", 
-                description=f"Here is all model you can choose. Current model is **{self.current_model}**"
-            )
-            if len(model_list) > 9:
-                model_list = model_list[:9]
-            for model in model_list:
-                embed.add_field(name=model, value=self.config["model_selection"][model]["description"])
-            
-            embed.timestamp = datetime.datetime.now()
-            embed.set_footer(text="Copy the model name and use \"!load <model name>\" to select the model!")
+        view = ModelSelectDropdownView(ctx.author, model_list, model_description_dict, model_emoji_dict)
+        await ctx.send(f"Model Setting.\nCurrent model is {current_model_emoji} **{current_model}**", view=view)
 
-            await ctx.send(embed=embed)
+        await view.wait()
+        self.select_model(view.value)
 
     @commands.command()
     async def list(self, ctx):
@@ -181,13 +172,14 @@ class LofiTransformerPlayer(commands.Cog):
         code, instrument = id.split("_")
         await hint_msg.delete()
 
+        current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
         source = discord.FFmpegPCMAudio(source=mp3_path)
         embed=discord.Embed(title=f"Now playing... {get_instrument_emoji(int(instrument))}", color=0xffc7cd)
         embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
         embed.add_field(name="id", value=id, inline=False)
         embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)
         embed.add_field(name="instrument", value=pretty_midi.program_to_instrument_name(int(instrument)), inline=False)
-        embed.add_field(name="model", value=self.current_model, inline=False)
+        embed.add_field(name="model", value=f"{current_model_emoji} {self.current_model}", inline=False)
         embed.set_footer(text="Please rate the song ⏬")
         embed.timestamp = datetime.datetime.now()
         rating_view = Rating(ctx.author)
@@ -229,8 +221,11 @@ class LofiTransformerPlayer(commands.Cog):
     @commands.command()
     async def instrument(self, ctx):
         """Show a dropdown selection to set the MIDI render instrument program number."""
+        current_instrument = self.config["instrument"]
+        emoji = get_instrument_emoji(current_instrument)
+
         view = InstrumentSelectDropdownView(ctx.author)
-        await ctx.send("Instrument Setting", view=view)
+        await ctx.send(f"Instrument Setting.\nCurrent instrument is {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=view)
 
         await view.wait()
         self.config["instrument"] = int(view.value)

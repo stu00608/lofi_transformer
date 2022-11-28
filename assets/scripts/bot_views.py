@@ -5,6 +5,31 @@ import typing
 import pretty_midi
 from bot_utils.utils import midi_program_to_emoji
 
+
+class ModelSelectDropdownView(discord.ui.View):
+    def __init__(self, author: typing.Union[discord.Member, discord.User], model_list, model_description_dict, model_emoji_dict):
+        super().__init__()
+        self.value = None
+        self.author = author
+        self.add_item(self.make_select_item(model_list, model_description_dict, model_emoji_dict))
+
+    def make_select_item(self, model_list, model_description_dict, model_emoji_dict):
+        select = discord.ui.Select(
+            placeholder="Select model to generate song.",
+            options=[discord.SelectOption(
+                label=model,
+                value=model,
+                emoji=model_emoji_dict[model],
+                description=model_description_dict[model],
+            ) for model in model_list]
+        )
+        async def select_callback(interaction):
+            await interaction.response.send_message(content=f"{select.values[0]} set!",ephemeral=False)
+            self.value = select.values[0]
+            self.stop()
+        select.callback = select_callback
+        return select
+
 class InstrumentSelectDropdownView(discord.ui.View):
     def __init__(self, author: typing.Union[discord.Member, discord.User]):
         super().__init__()

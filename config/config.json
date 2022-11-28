@@ -4,39 +4,45 @@
             "description": "LoFi105, fourth finetune.",
             "ckpt_path": "./exp/finetune_lofi/loss_8_params.pt",
             "statistic_json_name": "song_stats.json",
-            "gen_dir": "./gen/fourth_finetune_lofi"
+            "gen_dir": "./gen/fourth_finetune_lofi",
+            "emoji": "\u2603\ufe0f"
         },
         "vivid-butterfly-9-L8": {
             "description": "LoFi85, sixth finetune, Loss 8.",
             "ckpt_path": "./exp/sixth_finetune_lofi85/loss_8_params.pt",
             "statistic_json_name": "song_stats.json",
-            "gen_dir": "./gen/sixth_finetune_lofi85_L8"
+            "gen_dir": "./gen/sixth_finetune_lofi85_L8",
+            "emoji": "\ud83e\udd8b"
         },
         "vivid-butterfly-9-L10": {
             "description": "LoFi85, sixth finetune, Loss 10.",
             "ckpt_path": "./exp/sixth_finetune_lofi85/loss_10_params.pt",
             "statistic_json_name": "song_stats.json",
-            "gen_dir": "./gen/sixth_finetune_lofi85_L10"
+            "gen_dir": "./gen/sixth_finetune_lofi85_L10",
+            "emoji": "\ud83e\udd8b"
         },
         "vivid-butterfly-9-L15": {
             "description": "LoFi85, sixth finetune, Loss 15.",
             "ckpt_path": "./exp/sixth_finetune_lofi85/loss_15_params.pt",
             "statistic_json_name": "song_stats.json",
-            "gen_dir": "./gen/sixth_finetune_lofi85_L15"
+            "gen_dir": "./gen/sixth_finetune_lofi85_L15",
+            "emoji": "\ud83e\udd8b"
         },
         "vivid-butterfly-9-L20": {
             "description": "LoFi85, sixth finetune, Loss 20.",
             "ckpt_path": "./exp/sixth_finetune_lofi85/loss_20_params.pt",
             "statistic_json_name": "song_stats.json",
-            "gen_dir": "./gen/sixth_finetune_lofi85_L20"
+            "gen_dir": "./gen/sixth_finetune_lofi85_L20",
+            "emoji": "\ud83e\udd8b"
         },
         "vivid-butterfly-9-L25": {
             "description": "LoFi85, sixth finetune, Loss 25.",
             "ckpt_path": "./exp/sixth_finetune_lofi85/loss_25_params.pt",
             "statistic_json_name": "song_stats.json",
-            "gen_dir": "./gen/sixth_finetune_lofi85_L25"
+            "gen_dir": "./gen/sixth_finetune_lofi85_L25",
+            "emoji": "\ud83e\udd8b"
         }
     },
-    "current_model": "mild-snowball-7",
+    "current_model": "vivid-butterfly-9-L15",
     "instrument": 24
 }
