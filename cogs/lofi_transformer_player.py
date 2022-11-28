@@ -127,7 +127,8 @@ class LofiTransformerPlayer(commands.Cog):
         #TODO: Merge with a get function.
         if id is None:
             instrument = self.config["instrument"]
-            hint_msg = await ctx.send("Generating...", file=discord.File("img/bocchi.gif"))
+            current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
+            hint_msg = await ctx.send(f"Generating...\nmodel: {current_model_emoji} **{self.current_model}**\ninstrument: {get_instrument_emoji(instrument)} **{pretty_midi.program_to_instrument_name(instrument)}**", file=discord.File("img/bocchi.gif"))
             path = generate_song(
                 instrument=int(instrument),
                 ckpt_path=self.current_model_ckpt,
@@ -176,7 +177,7 @@ class LofiTransformerPlayer(commands.Cog):
         vote_embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
         vote_embed.add_field(name="id", value=id, inline=False)
         vote_embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)
-        vote_embed.add_field(name="instrument", value=pretty_midi.program_to_instrument_name(instrument), inline=False)
+        vote_embed.add_field(name="instrument", value=f"{get_instrument_emoji(instrument)} {pretty_midi.program_to_instrument_name(instrument)}", inline=False)
         vote_embed.add_field(name="model", value=f"{current_model_emoji} {self.current_model}", inline=False)
         vote_embed.set_footer(text="Please rate the song ⏬")
         vote_embed.timestamp = datetime.datetime.now()
