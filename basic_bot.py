@@ -1,16 +1,10 @@
-# This example requires the 'members' and 'message_content' privileged intents to function.
-
 import os
 import discord
 from discord.ext import commands, tasks
-from time import sleep
 from datetime import datetime
 import asyncio
-from generate import generate_song
 
 token = os.environ["BOT_TOKEN"]
-
-discord.utils.setup_logging()
 
 DAY_TIME = "06:00"
 NIGHT_TIME = "18:00"
@@ -30,14 +24,23 @@ class Bot(commands.Bot):
             description=description
         )
 
+        self.initial_extensions = [
+            "cogs.lofi_transformer_player"
+        ]
+
         self.day_avatar = "img/day_bocchi.jpg"
         self.night_avatar = "img/night_bocchi.jpg"
         
-        self.update_avatar()
+        self.init_avatar()
 
     async def on_ready(self):
         print(f'Logged in as {self.user} (ID: {self.user.id})')
         print('------')
+    
+    async def setup_hook(self) -> None:
+        self.update_avatar.start()
+        for ext in self.initial_extensions:
+            await self.load_extension(ext)
 
     def switch_avatar(self, is_day: True):
         if is_day:
@@ -53,7 +56,7 @@ class Bot(commands.Bot):
                 print("Good evening!")
                 self.day_night_state = "night"
 
-    def update_avatar(self):
+    def init_avatar(self):
         now = datetime.now()
         day_time = datetime.strptime(DAY_TIME, "%H:%M")
         night_time = datetime.strptime(NIGHT_TIME, "%H:%M")
@@ -64,8 +67,19 @@ class Bot(commands.Bot):
         else:
             self.day_night_state = "night"
 
-bot = Bot()
+    @tasks.loop(seconds=10)
+    async def update_avatar(self):
+        if bot.is_closed():
+            print("Bot is closed")
+            return
 
+        now = datetime.strftime(datetime.now(), '%H:%M')
+        if now == DAY_TIME and bot.day_night_state == "night":
+            bot.switch_avatar(is_day=True)
+        elif now == NIGHT_TIME and bot.day_night_state == "day":
+            bot.switch_avatar(is_day=False)
+
+bot = Bot()
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -75,28 +89,5 @@ async def on_voice_state_update(member, before, after):
         print("Bot getting out.")
         await voice_state.disconnect() # Disconnect the bot from the channel
 
-@tasks.loop(seconds=10)
-async def avatar_update():
-    if bot.is_closed():
-        print("Bot is closed")
-        return
-
-    now = datetime.strftime(datetime.now(), '%H:%M')
-    if now == DAY_TIME and bot.day_night_state == "night":
-        bot.switch_avatar(is_day=True)
-    elif now == NIGHT_TIME and bot.day_night_state == "day":
-        bot.switch_avatar(is_day=False)
-    
-async def load_extensions():
-    for f in os.listdir("./cogs"):
-	    if f.endswith(".py"):
-		    await bot.load_extension("cogs." + f[:-3])
-
-async def main():
-    async with bot:
-        avatar_update.start()
-        await load_extensions()
-        await bot.start(token)
-
-asyncio.run(main())
-    
+if __name__ == "__main__":
+    bot.run(token)
