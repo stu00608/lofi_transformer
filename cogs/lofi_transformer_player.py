@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 from discord.ext import commands
 from generate import generate_song, render_midi
-from bot_utils.utils import get_audio_time, getfiles, midi_program_to_emoji
+from bot_utils.utils import get_audio_time, getfiles, get_instrument_emoji
 from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView
 
 CONFIG_PATH = "./config/config.json"
@@ -161,7 +161,7 @@ class LofiTransformerPlayer(commands.Cog):
             complete_id = id+"_"+instrument
             if complete_id not in self.filedict.keys():
                 # Need to render new one.
-                hint_msg = await ctx.send(f"Rendering file to {midi_program_to_emoji[int(instrument)]}...")
+                hint_msg = await ctx.send(f"Rendering file to {get_instrument_emoji(int(instrument))}...")
                 path = render_midi(
                     instrument=int(instrument),
                     out_dir=self.out_dir,
@@ -182,7 +182,7 @@ class LofiTransformerPlayer(commands.Cog):
         await hint_msg.delete()
 
         source = discord.FFmpegPCMAudio(source=mp3_path)
-        embed=discord.Embed(title=f"Now playing... {midi_program_to_emoji[int(instrument)]}", color=0xffc7cd)
+        embed=discord.Embed(title=f"Now playing... {get_instrument_emoji(int(instrument))}", color=0xffc7cd)
         embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
         embed.add_field(name="id", value=id, inline=False)
         embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)

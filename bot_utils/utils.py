@@ -1,11 +1,24 @@
 import os
+import pretty_midi
 from pydub import AudioSegment
 
+# Extend this to add more selection.
 midi_program_to_emoji = {
     0: '🎹',
     4: '🎹',
+    12: '🔔',
+    16: '🎹',
     24: '🎸',
+    56: '🎺',
 }
+
+def get_instrument_emoji(instrument: int):
+    try:
+        emoji = midi_program_to_emoji[int(instrument)]
+    except Exception as e:
+        emoji = pretty_midi.program_to_instrument_name(int(instrument))
+    return emoji
+
 
 def getfiles(out_dir):
     """Get playable audio source and midi in generate folder."""    
