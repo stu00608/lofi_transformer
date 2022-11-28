@@ -2,89 +2,17 @@ import sys
 sys.path.append("..")
 import os
 import json
+import pretty_midi
 import discord
-import typing
 import datetime
 import numpy as np
-from time import sleep
-from pydub import AudioSegment
 from discord.ext import commands
-from generate import generate_song
+from generate import generate_song, render_midi
+from bot_utils.utils import get_audio_time, getfiles, get_instrument_emoji
+from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView
 
 CONFIG_PATH = "./config/config.json"
 
-# Define a simple View that gives us a confirmation menu
-class Rating(discord.ui.View):
-    def __init__(self, author: typing.Union[discord.Member, discord.User]):
-        super().__init__()
-        self.value = None
-        self.author = author
-        self.user = None
-        self.is_skipped = False
-
-    async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
-        self.user = inter.user
-        if inter.user != self.author:
-            await inter.response.send_message(content="Warning : You're not the votable user.", ephemeral=True)
-            return False
-        return True    
-
-    # When the confirm button is pressed, set the inner value to `True` and
-    # stop the View from listening to more input.
-    # We also send the user an ephemeral message that we're confirming their choice.
-    @discord.ui.button(label='1', style=discord.ButtonStyle.grey)
-    async def one(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 1, thank you!', ephemeral=True)
-        self.value = 1
-        self.stop()
-
-    @discord.ui.button(label='2', style=discord.ButtonStyle.grey)
-    async def two(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 2, thank you!', ephemeral=True)
-        self.value = 2
-        self.stop()
-
-    @discord.ui.button(label='3', style=discord.ButtonStyle.grey)
-    async def three(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 3, thank you!', ephemeral=True)
-        self.value = 3
-        self.stop()
-
-    @discord.ui.button(label='4', style=discord.ButtonStyle.grey)
-    async def four(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 4, thank you!', ephemeral=True)
-        self.value = 4
-        self.stop()
-
-    @discord.ui.button(label='5', style=discord.ButtonStyle.grey)
-    async def five(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 5, thank you!', ephemeral=True)
-        self.value = 5
-        self.stop()
-        
-    @discord.ui.button(label='Skip', style=discord.ButtonStyle.blurple)
-    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('Vote skipped.', ephemeral=True)
-        self.is_skipped = True
-        self.stop()
-
-def getfiles(out_dir):
-    os.makedirs(out_dir, exist_ok=True)
-    filenames = os.listdir(out_dir)
-    filenames = [filename.split(".")[0] for filename in filenames if filename.endswith(".mid")]
-    filedict = {}
-    for filename in filenames:
-        mid_path = os.path.join(out_dir, filename+".mid")
-        mp3_path = os.path.join(out_dir, filename+".mp3")
-        filedict[filename] = [mid_path, mp3_path]
-    return filedict
-
-def get_audio_time(file_path):
-    """Get mp3 audio length in %m:%s format."""
-    duration = AudioSegment.from_mp3(file_path).duration_seconds
-    minute = int(duration // 60)
-    second = int(duration % 60)
-    return f"{minute:02d}:{second:02d}"
 
 class LofiTransformerPlayer(commands.Cog):
 
@@ -92,7 +20,6 @@ class LofiTransformerPlayer(commands.Cog):
         self.bot = bot
         self.load_config()
         self.select_model(self.config["current_model"])
-        self.load_stats()
         self.lastfile = None
 
     def select_model(self, model):
@@ -102,6 +29,8 @@ class LofiTransformerPlayer(commands.Cog):
         self.current_model_ckpt = self.config["model_selection"][self.current_model]["ckpt_path"]
         self.out_dir = self.config["model_selection"][self.current_model]["gen_dir"]
         self.filedict = getfiles(self.out_dir)
+
+        self.load_stats()
     
     def load_stats(self):
         assert (self.config != None) and (self.current_model != None)
@@ -198,34 +127,66 @@ class LofiTransformerPlayer(commands.Cog):
         await ctx.send(files=songs)
 
     @commands.command()
-    async def play(self, ctx, id=None):
+    async def play(self, ctx, id=None, instrument=None):
         """Plays a file from the local filesystem"""
 
         #TODO: Merge with a get function.
-        if id is None:
+        if id is None and instrument is None:   # !play <blank> <blank>
+            instrument = self.config["instrument"]
             hint_msg = await ctx.send("Generating...", file=discord.File("img/bocchi.gif"))
             path = generate_song(
+                instrument=int(instrument),
                 ckpt_path=self.current_model_ckpt,
                 out_dir=self.out_dir
             )[0]
             mid_path, mp3_path = path
             await self.update_dict(ctx)
             self.lastfile = path
-        elif id not in self.filedict.keys():
-            await ctx.send("Files not found.")
-            return
-        else:
-            hint_msg = await ctx.send(f"Play file...")
-            song = self.filedict[id]
-            mid_path, mp3_path = song
+        elif instrument is None:                # !play id <blank>
+            # TODO: if user only gives code, should return if there is an existing audio.
+            id_check = id.split("_")
+            if len(id_check) < 2 or len(id_check) > 2:
+                await ctx.send("ID format error.")
+                await ctx.voice_client.disconnect()
+                return
+            elif id not in self.filedict.keys():
+                await ctx.send("Files not found.")
+                await ctx.voice_client.disconnect()
+                return
+            else:
+                hint_msg = await ctx.send(f"Play file...")
+                song = self.filedict[id]
+                mid_path, mp3_path = song
+        else:                                   # !play id instrument (Render new file or play existed one.)
+            complete_id = id+"_"+instrument
+            if complete_id not in self.filedict.keys():
+                # Need to render new one.
+                hint_msg = await ctx.send(f"Rendering file to {get_instrument_emoji(int(instrument))}...")
+                path = render_midi(
+                    instrument=int(instrument),
+                    out_dir=self.out_dir,
+                    filename=id
+                )
+                mid_path, mp3_path = path
+                await self.update_dict(ctx)
+                self.lastfile = path
+                id = complete_id
+            else:
+                hint_msg = await ctx.send(f"Play file...")
+                song = self.filedict[complete_id]
+                mid_path, mp3_path = song
+                id = complete_id
+
         id = mp3_path.split("/")[-1].split(".")[0]
+        code, instrument = id.split("_")
         await hint_msg.delete()
 
         source = discord.FFmpegPCMAudio(source=mp3_path)
-        embed=discord.Embed(title="Now playing...", color=0xffc7cd)
+        embed=discord.Embed(title=f"Now playing... {get_instrument_emoji(int(instrument))}", color=0xffc7cd)
         embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
         embed.add_field(name="id", value=id, inline=False)
         embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)
+        embed.add_field(name="instrument", value=pretty_midi.program_to_instrument_name(int(instrument)), inline=False)
         embed.add_field(name="model", value=self.current_model, inline=False)
         embed.set_footer(text="Please rate the song ⏬")
         embed.timestamp = datetime.datetime.now()
@@ -239,8 +200,12 @@ class LofiTransformerPlayer(commands.Cog):
             return
 
         rate = {"user": rating_view.user.name+"#"+rating_view.user.discriminator, "vote": rating_view.value}
+
         if id not in self.song_stats.keys():
             self.song_stats[id] = {
+                "code": code,
+                "time": get_audio_time(mp3_path),
+                "instrument": int(instrument),
                 "model": self.current_model,
                 "path": mp3_path,
                 "view": 1,
@@ -260,6 +225,16 @@ class LofiTransformerPlayer(commands.Cog):
     async def leave(self, ctx):
         """Stops and disconnects the bot from voice"""
         await ctx.voice_client.disconnect()
+    
+    @commands.command()
+    async def instrument(self, ctx):
+        """Show a dropdown selection to set the MIDI render instrument program number."""
+        view = InstrumentSelectDropdownView(ctx.author)
+        await ctx.send("Instrument Setting", view=view)
+
+        await view.wait()
+        self.config["instrument"] = int(view.value)
+        self.save_config()
 
     @play.before_invoke
     async def ensure_voice(self, ctx):
@@ -276,8 +251,6 @@ class LofiTransformerPlayer(commands.Cog):
     @get.before_invoke
     async def update_dict(self, ctx):
         self.filedict = getfiles(self.out_dir)
-    
-
 
 async def setup(client):
     await client.add_cog(LofiTransformerPlayer(client))
