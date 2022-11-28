@@ -182,7 +182,7 @@ class LofiTransformerPlayer(commands.Cog):
         vote_embed.set_footer(text="Please rate the song ⏬")
         vote_embed.timestamp = datetime.datetime.now()
         rating_view = Rating(ctx.author)
-        vote_area = await ctx.send(embed=vote_embed, view=rating_view)
+        vote_area = await ctx.send(id, embed=vote_embed, view=rating_view)
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
         return vote_area, vote_embed, rating_view
     
