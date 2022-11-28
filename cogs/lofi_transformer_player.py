@@ -172,13 +172,14 @@ class LofiTransformerPlayer(commands.Cog):
         code, instrument = id.split("_")
         await hint_msg.delete()
 
+        current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
         source = discord.FFmpegPCMAudio(source=mp3_path)
         embed=discord.Embed(title=f"Now playing... {get_instrument_emoji(int(instrument))}", color=0xffc7cd)
         embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
         embed.add_field(name="id", value=id, inline=False)
         embed.add_field(name="time", value=get_audio_time(mp3_path), inline=False)
         embed.add_field(name="instrument", value=pretty_midi.program_to_instrument_name(int(instrument)), inline=False)
-        embed.add_field(name="model", value=self.current_model, inline=False)
+        embed.add_field(name="model", value=f"{current_model_emoji} {self.current_model}", inline=False)
         embed.set_footer(text="Please rate the song ⏬")
         embed.timestamp = datetime.datetime.now()
         rating_view = Rating(ctx.author)
