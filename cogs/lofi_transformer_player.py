@@ -9,7 +9,7 @@ import numpy as np
 from discord.ext import commands
 from generate import generate_song, render_midi
 from bot_utils.utils import get_audio_time, getfiles, get_instrument_emoji
-from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView
+from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView, ModelSelectDropdownView
 
 CONFIG_PATH = "./config/config.json"
 
@@ -62,28 +62,18 @@ class LofiTransformerPlayer(commands.Cog):
             j.write(config)
         
     @commands.command()
-    async def load(self, ctx, model=None):
-        """Load specific model to generate"""
-        if model:
-            self.select_model(model)
-            await ctx.send(f"Model {model} loaded!")
-        else:
-            # Show selectable models.
-            model_list = self.config["model_selection"].keys()
+    async def load(self, ctx):
+        """Show a dropdown selection to set the model to generate song."""
+        current_model = self.config["current_model"]
+        model_list = self.config["model_selection"].keys()
+        model_description_dict = {m: self.config["model_selection"][m]["description"] for m in model_list}
+        model_emoji_dict = {m: self.config["model_selection"][m]["emoji"] for m in model_list}
 
-            embed=discord.Embed(
-                title="Model List", 
-                description=f"Here is all model you can choose. Current model is **{self.current_model}**"
-            )
-            if len(model_list) > 9:
-                model_list = model_list[:9]
-            for model in model_list:
-                embed.add_field(name=model, value=self.config["model_selection"][model]["description"])
-            
-            embed.timestamp = datetime.datetime.now()
-            embed.set_footer(text="Copy the model name and use \"!load <model name>\" to select the model!")
+        view = ModelSelectDropdownView(ctx.author, model_list, model_description_dict, model_emoji_dict)
+        await ctx.send(f"Model Setting.\nCurrent model is **{current_model}**", view=view)
 
-            await ctx.send(embed=embed)
+        await view.wait()
+        self.select_model(view.value)
 
     @commands.command()
     async def list(self, ctx):
