@@ -1,6 +1,7 @@
 import os
 import pickle
 import shutil
+import miditoolkit
 from midi2audio import FluidSynth
 
 import torch
@@ -43,8 +44,6 @@ def generate_song(instrument, ckpt_path, num_songs=1, out_dir="gen"):
             new_state_dict[name] = v
         net.load_state_dict(new_state_dict)
 
-    midi_synth = FluidSynth(sound_font="./soundfonts/A320U.sf2")
-
     songs_path = []
     gen_songs = 0
     while(gen_songs < num_songs):
@@ -55,35 +54,47 @@ def generate_song(instrument, ckpt_path, num_songs=1, out_dir="gen"):
                 continue
 
         filename = get_random_string(length=10)
-        out_file_path = os.path.join(out_dir, filename+f"_{instrument}"+".mid")
-        wav_file_path = os.path.join(out_dir, filename+f"_{instrument}"+".wav")
-        mp3_file_path = os.path.join(out_dir, filename+f"_{instrument}"+".mp3")
+        mid_file_path = os.path.join(out_dir, filename+".mid")
         # Get midi object.
-        midi_obj = write_midi(res, out_file_path, word2event, dump=False)
+        midi_obj = write_midi(res, mid_file_path, word2event, dump=False)
 
         # Only take first tempo change.
         midi_obj.tempo_changes = midi_obj.tempo_changes[:2]
-        current_bpm = midi_obj.tempo_changes[-1].tempo
-
-        # Change the channel instrument.
-        midi_obj.instruments[0].program = instrument
 
         # output midi.
-        midi_obj.dump(out_file_path)
+        midi_obj.dump(mid_file_path)
 
-        # output wav.
-        midi_synth.midi_to_audio(out_file_path, wav_file_path)
-
-        # convert to mp3
-        wav = AudioSegment.from_wav(wav_file_path)
-        wav += 5
-        wav.export(mp3_file_path, format="mp3")
-        print("Exported")
-        os.remove(wav_file_path)
+        mid_file_path, mp3_file_path = render_midi(instrument, out_dir, filename)
 
         gen_songs += 1
-        songs_path.append([out_file_path, mp3_file_path])
+        songs_path.append([mid_file_path, mp3_file_path])
     return songs_path
+
+def render_midi(instrument, out_dir, filename, soundfont="./soundfonts/A320U.sf2"):
+    """render midi with instrument."""
+    midi_synth = FluidSynth(sound_font=soundfont)
+
+    mid_file_path = os.path.join(out_dir, filename+".mid")
+    wav_file_path = os.path.join(out_dir, filename+"_"+str(instrument)+".wav")
+    mp3_file_path = os.path.join(out_dir, filename+"_"+str(instrument)+".mp3")
+
+    # set midi instrument.
+    midi_obj = miditoolkit.midi.parser.MidiFile(mid_file_path)
+    
+    # Change the channel instrument.
+    midi_obj.instruments[0].program = instrument
+
+    # output wav.
+    midi_synth.midi_to_audio(mid_file_path, wav_file_path)
+
+    # convert to mp3
+    wav = AudioSegment.from_wav(wav_file_path)
+    wav += 5
+    wav.export(mp3_file_path, format="mp3")
+    print(f"{mp3_file_path} exported!")
+    os.remove(wav_file_path)
+
+    return mid_file_path, mp3_file_path
 
 if __name__ == "__main__":
     generate_song(

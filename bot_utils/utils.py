@@ -8,14 +8,18 @@ midi_program_to_emoji = {
 }
 
 def getfiles(out_dir):
+    """Get playable audio source and midi in generate folder."""    
     os.makedirs(out_dir, exist_ok=True)
     filenames = os.listdir(out_dir)
-    filenames = [filename.split(".")[0] for filename in filenames if filename.endswith(".mid")]
+    codes = [filename.split(".")[0] for filename in filenames if filename.endswith(".mid")]
     filedict = {}
-    for filename in filenames:
-        mid_path = os.path.join(out_dir, filename+".mid")
-        mp3_path = os.path.join(out_dir, filename+".mp3")
-        filedict[filename] = [mid_path, mp3_path]
+    for c in codes:
+        audios = [filename for filename in filenames if filename.startswith(c) and filename.endswith(".mp3")]
+        for a in audios:
+            filename = a.split(".")[0]
+            mid_path = os.path.join(out_dir, c+".mid")
+            mp3_path = os.path.join(out_dir, a)
+            filedict[filename] = [mid_path, mp3_path]
     return filedict
 
 def get_audio_time(file_path):

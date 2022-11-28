@@ -7,7 +7,7 @@ import discord
 import datetime
 import numpy as np
 from discord.ext import commands
-from generate import generate_song
+from generate import generate_song, render_midi
 from bot_utils.utils import get_audio_time, getfiles, midi_program_to_emoji
 from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView
 
@@ -127,27 +127,56 @@ class LofiTransformerPlayer(commands.Cog):
         await ctx.send(files=songs)
 
     @commands.command()
-    async def play(self, ctx, id=None):
+    async def play(self, ctx, id=None, instrument=None):
         """Plays a file from the local filesystem"""
 
         #TODO: Merge with a get function.
-        if id is None:
+        if id is None and instrument is None:   # !play <blank> <blank>
+            instrument = self.config["instrument"]
             hint_msg = await ctx.send("Generating...", file=discord.File("img/bocchi.gif"))
             path = generate_song(
-                instrument=self.config["instrument"],
+                instrument=int(instrument),
                 ckpt_path=self.current_model_ckpt,
                 out_dir=self.out_dir
             )[0]
             mid_path, mp3_path = path
             await self.update_dict(ctx)
             self.lastfile = path
-        elif id not in self.filedict.keys():
-            await ctx.send("Files not found.")
-            return
-        else:
-            hint_msg = await ctx.send(f"Play file...")
-            song = self.filedict[id]
-            mid_path, mp3_path = song
+        elif instrument is None:                # !play id <blank>
+            # TODO: if user only gives code, should return if there is an existing audio.
+            id_check = id.split("_")
+            if len(id_check) < 2 or len(id_check) > 2:
+                await ctx.send("ID format error.")
+                await ctx.voice_client.disconnect()
+                return
+            elif id not in self.filedict.keys():
+                await ctx.send("Files not found.")
+                await ctx.voice_client.disconnect()
+                return
+            else:
+                hint_msg = await ctx.send(f"Play file...")
+                song = self.filedict[id]
+                mid_path, mp3_path = song
+        else:                                   # !play id instrument (Render new file or play existed one.)
+            complete_id = id+"_"+instrument
+            if complete_id not in self.filedict.keys():
+                # Need to render new one.
+                hint_msg = await ctx.send(f"Rendering file to {midi_program_to_emoji[int(instrument)]}...")
+                path = render_midi(
+                    instrument=int(instrument),
+                    out_dir=self.out_dir,
+                    filename=id
+                )
+                mid_path, mp3_path = path
+                await self.update_dict(ctx)
+                self.lastfile = path
+                id = complete_id
+            else:
+                hint_msg = await ctx.send(f"Play file...")
+                song = self.filedict[complete_id]
+                mid_path, mp3_path = song
+                id = complete_id
+
         id = mp3_path.split("/")[-1].split(".")[0]
         code, instrument = id.split("_")
         await hint_msg.delete()
