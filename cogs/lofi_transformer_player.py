@@ -62,7 +62,7 @@ class LofiTransformerPlayer(commands.Cog):
             j.write(config)
         
     @commands.command()
-    async def load(self, ctx):
+    async def model(self, ctx):
         """Show a dropdown selection to set the model to generate song."""
         current_model = self.config["current_model"]
         model_list = self.config["model_selection"].keys()
