@@ -45,7 +45,6 @@ class InstrumentSelectDropdownView(discord.ui.View):
                 description=f"MIDI Program: {program}") for program in midi_program_to_emoji.keys()]
     )
     async def select_callback(self, interaction, select):
-        await interaction.response.send_message(content=f"{select.values[0]} set!",ephemeral=False)
         self.value = select.values[0]
         self.stop()
 

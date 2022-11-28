@@ -74,6 +74,9 @@ class LofiTransformerPlayer(commands.Cog):
         await ctx.send(f"Model Setting.\nCurrent model is {current_model_emoji} **{current_model}**", view=view)
 
         await view.wait()
+        if view.value == None:
+            print("Model select view timeout.")
+            return
         self.select_model(view.value)
 
     @commands.command()
@@ -154,12 +157,17 @@ class LofiTransformerPlayer(commands.Cog):
         current_instrument = self.config["instrument"]
         emoji = get_instrument_emoji(current_instrument)
         view = self.get_instrument_dropdown_view(ctx)
-        await ctx.send(f"Instrument Setting.\nCurrent instrument is {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=view)
+        instrument_setting_message = await ctx.send(f"Instrument Setting.\nCurrent instrument is {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=view)
 
         await view.wait()
+        if view.value == None:
+            print("Instrument select view timeout.")
+            return
         self.config["instrument"] = int(view.value)
         self.save_config()
-
+        current_instrument = self.config["instrument"]
+        emoji = get_instrument_emoji(current_instrument)
+        await instrument_setting_message.edit(content=f"Instrument changed to {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=None)
     
     async def play_music(self, ctx, id, mp3_path, instrument):
         current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
@@ -185,22 +193,26 @@ class LofiTransformerPlayer(commands.Cog):
         instrument = int(instrument)
         vote_area, embed, rating_view = await self.play_music(ctx, id, mp3_path, instrument)
         await rating_view.wait()
+        if rating_view.value == None:
+            print("Rating view timeout.")
+            return
         if rating_view.is_skipped:
             await vote_area.edit(embed=embed, view=None)
             return
-        elif rating_view.is_rerender:
+        if rating_view.is_rerender:
             view = self.get_instrument_dropdown_view(ctx)
             await vote_area.edit(embed=embed, view=view)
 
             await view.wait()
+            if view.value == None:
+                print("Re-render view timeout.")
+                return
             instrument = int(view.value)
             complete_id = code+"_"+str(instrument)
-            print(complete_id)
             if complete_id not in self.filedict.keys():
-                # Need to render new one.
-                hint_msg = await ctx.send(f"Rendering file to {get_instrument_emoji(int(instrument))}...")
+                hint_msg = await ctx.send(f"Rendering file to {get_instrument_emoji(instrument)}...")
                 path = render_midi(
-                    instrument=int(instrument),
+                    instrument=instrument,
                     out_dir=self.out_dir,
                     filename=code
                 )
@@ -215,7 +227,6 @@ class LofiTransformerPlayer(commands.Cog):
                 id = complete_id
             
             await hint_msg.delete()
-
             await self.play_command(ctx, mp3_path)
             return
 
@@ -225,7 +236,7 @@ class LofiTransformerPlayer(commands.Cog):
             self.song_stats[id] = {
                 "code": code,
                 "time": get_audio_time(mp3_path),
-                "instrument": int(instrument),
+                "instrument": instrument,
                 "model": self.current_model,
                 "path": mp3_path,
                 "view": 1,
