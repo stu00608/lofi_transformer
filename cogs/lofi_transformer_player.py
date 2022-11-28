@@ -65,12 +65,13 @@ class LofiTransformerPlayer(commands.Cog):
     async def model(self, ctx):
         """Show a dropdown selection to set the model to generate song."""
         current_model = self.config["current_model"]
+        current_model_emoji = self.config["model_selection"][current_model]["emoji"]
         model_list = self.config["model_selection"].keys()
         model_description_dict = {m: self.config["model_selection"][m]["description"] for m in model_list}
         model_emoji_dict = {m: self.config["model_selection"][m]["emoji"] for m in model_list}
 
         view = ModelSelectDropdownView(ctx.author, model_list, model_description_dict, model_emoji_dict)
-        await ctx.send(f"Model Setting.\nCurrent model is **{current_model}**", view=view)
+        await ctx.send(f"Model Setting.\nCurrent model is {current_model_emoji} **{current_model}**", view=view)
 
         await view.wait()
         self.select_model(view.value)
