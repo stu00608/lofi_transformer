@@ -60,6 +60,7 @@ class Rating(discord.ui.View):
         self.is_rerender = False
         self.is_stopped = False
         self.is_quitted = False
+        self.is_replay = False
         self.votable = votable
 
     async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
@@ -124,9 +125,17 @@ class Rating(discord.ui.View):
         self.value = "placeholder"
         self.is_skipped = True
         self.stop()
+        
+    @discord.ui.button(label='🔄', style=discord.ButtonStyle.grey)
+    async def _replay(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.value = "placeholder"
+        self.is_replay = True
+        self.stop()
 
     @discord.ui.button(label='Re-render', style=discord.ButtonStyle.green)
     async def _rerender(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
         self.value = "placeholder"
         self.is_rerender = True
         self.stop()
