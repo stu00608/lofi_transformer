@@ -58,6 +58,7 @@ class Rating(discord.ui.View):
         self.user = None
         self.is_skipped = False
         self.is_rerender = False
+        self.is_stopped = False
 
     async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
         self.user = inter.user
@@ -105,9 +106,16 @@ class Rating(discord.ui.View):
         self.is_rerender = True
         self.stop()
         
-    @discord.ui.button(label='Skip', style=discord.ButtonStyle.red)
+    @discord.ui.button(label='Skip', style=discord.ButtonStyle.blurple)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message('Vote skipped.', ephemeral=True)
         self.value = "placeholder"
         self.is_skipped = True
+        self.stop()
+        
+    @discord.ui.button(label='Stop', style=discord.ButtonStyle.red)
+    async def stop_music(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.value = "placeholder"
+        self.is_stopped = True
         self.stop()
