@@ -1,7 +1,4 @@
 __pycache__/
 *_dataset/
-exp/
-gen/
-wandb/
-loop_file/
+wandb/loop_file/
 runtime_stats.json
