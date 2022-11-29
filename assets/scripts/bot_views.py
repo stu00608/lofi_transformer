@@ -119,28 +119,28 @@ class Rating(discord.ui.View):
         self.value = 5
         self.stop()
         
-    @discord.ui.button(label='Skip', style=discord.ButtonStyle.blurple)
-    async def _skip(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('Vote skipped.', ephemeral=True)
+    @discord.ui.button(label='Generate', style=discord.ButtonStyle.blurple)
+    async def _regenerate(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
         self.value = "placeholder"
         self.is_skipped = True
         self.stop()
         
-    @discord.ui.button(label='🔄', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='Replay', style=discord.ButtonStyle.grey)
     async def _replay(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.value = "placeholder"
         self.is_replay = True
         self.stop()
 
-    @discord.ui.button(label='🎹', style=discord.ButtonStyle.green)
+    @discord.ui.button(label='Render', style=discord.ButtonStyle.green)
     async def _rerender(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.value = "placeholder"
         self.is_rerender = True
         self.stop()
         
-    @discord.ui.button(label='🛑', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='Stop', style=discord.ButtonStyle.grey)
     async def _stop(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.value = "placeholder"
