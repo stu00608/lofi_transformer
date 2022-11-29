@@ -133,21 +133,21 @@ class Rating(discord.ui.View):
         self.is_replay = True
         self.stop()
 
-    @discord.ui.button(label='Re-render', style=discord.ButtonStyle.green)
+    @discord.ui.button(label='🎹', style=discord.ButtonStyle.green)
     async def _rerender(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.value = "placeholder"
         self.is_rerender = True
         self.stop()
         
-    @discord.ui.button(label='Stop', style=discord.ButtonStyle.red)
+    @discord.ui.button(label='🛑', style=discord.ButtonStyle.grey)
     async def _stop(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.value = "placeholder"
         self.is_stopped = True
         self.stop()
 
-    @discord.ui.button(label='Quit', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label='Quit', style=discord.ButtonStyle.red)
     async def _quit(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         self.value = "placeholder"
