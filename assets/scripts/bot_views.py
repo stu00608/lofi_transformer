@@ -99,18 +99,18 @@ class Rating(discord.ui.View):
         await interaction.response.send_message('You rated 5, thank you!', ephemeral=True)
         self.value = 5
         self.stop()
-
-    @discord.ui.button(label='Re-render', style=discord.ButtonStyle.green)
-    async def rerender(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.value = "placeholder"
-        self.is_rerender = True
-        self.stop()
         
     @discord.ui.button(label='Skip', style=discord.ButtonStyle.blurple)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message('Vote skipped.', ephemeral=True)
         self.value = "placeholder"
         self.is_skipped = True
+        self.stop()
+
+    @discord.ui.button(label='Re-render', style=discord.ButtonStyle.green)
+    async def rerender(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = "placeholder"
+        self.is_rerender = True
         self.stop()
         
     @discord.ui.button(label='Stop', style=discord.ButtonStyle.red)
