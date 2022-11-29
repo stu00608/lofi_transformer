@@ -208,6 +208,7 @@ class LofiTransformerPlayer(commands.Cog):
         if rating_view.value == None:
             logger.info("Rating view timeout.")
         elif rating_view.is_replay:
+            await self.ensure_voice(ctx)
             await vote_area.edit(embed=embed, view=None)
             await self.play_command(ctx, mp3_path)
         elif rating_view.is_stopped:
@@ -218,9 +219,11 @@ class LofiTransformerPlayer(commands.Cog):
         elif rating_view.is_quitted:
             if ctx.voice_client.is_playing():
                 ctx.voice_client.stop()
+            ctx.voice_client.disconnect()
             await vote_area.edit(embed=embed, view=None)
         elif rating_view.is_skipped:
             await vote_area.edit(embed=embed, view=None)
+            await self.ensure_voice(ctx)
             await self.play(ctx)
         elif rating_view.is_rerender:
             view = self.get_instrument_dropdown_view(ctx)
