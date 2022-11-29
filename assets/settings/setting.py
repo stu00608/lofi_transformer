@@ -6,7 +6,7 @@ LOGGING_CONFIG = {
     "disabled_existing_loggers": False, 
     "formatters":{
         "verbose":{
-            "format": "%(levelname)-10s - %(asctime)s - %(module)-15s : %(message)s"
+            "format": "%(levelname)-6s - %(asctime)s - %(module)-15s : %(message)s"
         },
         "standard":{
             "format": "%(levelname)-6s - %(name)-20s : %(message)s"
@@ -33,12 +33,12 @@ LOGGING_CONFIG = {
     }, 
     "loggers":{
         "bot": {
-            'handlers': ['console'],
+            'handlers': ['console', "file"],
             "level": "INFO", 
             "propagate": False
         }, 
         "lofi_transformer": {
-            'handlers': ['console'],
+            'handlers': ['console', "file"],
             "level": "DEBUG", 
             "propagate": False
         }, 
