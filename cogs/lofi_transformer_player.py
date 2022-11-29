@@ -71,12 +71,14 @@ class LofiTransformerPlayer(commands.Cog):
         model_emoji_dict = {m: self.config["model_selection"][m]["emoji"] for m in model_list}
 
         view = ModelSelectDropdownView(ctx.author, model_list, model_description_dict, model_emoji_dict)
-        await ctx.send(f"Model Setting.\nCurrent model is {current_model_emoji} **{current_model}**", view=view)
+        model_select_message = await ctx.send(f"Model Setting.\nCurrent model is {current_model_emoji} **{current_model}**", view=view)
 
         await view.wait()
         if view.value == None:
             print("Model select view timeout.")
             return
+        model_emoji = self.config["model_selection"][view.value]["emoji"]
+        await model_select_message.edit(content=f"Model changed to {model_emoji} **{view.value}**", view=None)
         self.select_model(view.value)
 
     @commands.command()
@@ -208,6 +210,7 @@ class LofiTransformerPlayer(commands.Cog):
             if view.value == None:
                 print("Re-render view timeout.")
                 return
+            await vote_area.edit(embed=embed, view=None)
             instrument = int(view.value)
             complete_id = code+"_"+str(instrument)
             if complete_id not in self.filedict.keys():

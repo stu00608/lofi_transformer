@@ -24,7 +24,7 @@ class ModelSelectDropdownView(discord.ui.View):
             ) for model in model_list]
         )
         async def select_callback(interaction):
-            await interaction.response.send_message(content=f"{select.values[0]} set!",ephemeral=False)
+            await interaction.response.defer()
             self.value = select.values[0]
             self.stop()
         select.callback = select_callback
@@ -45,6 +45,7 @@ class InstrumentSelectDropdownView(discord.ui.View):
                 description=f"MIDI Program: {program}") for program in midi_program_to_emoji.keys()]
     )
     async def select_callback(self, interaction, select):
+        await interaction.response.defer()
         self.value = select.values[0]
         self.stop()
 
@@ -100,11 +101,13 @@ class Rating(discord.ui.View):
 
     @discord.ui.button(label='Re-render', style=discord.ButtonStyle.green)
     async def rerender(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = "placeholder"
         self.is_rerender = True
         self.stop()
         
     @discord.ui.button(label='Skip', style=discord.ButtonStyle.red)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message('Vote skipped.', ephemeral=True)
+        self.value = "placeholder"
         self.is_skipped = True
         self.stop()
