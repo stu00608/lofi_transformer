@@ -59,6 +59,7 @@ class Rating(discord.ui.View):
         self.is_skipped = False
         self.is_rerender = False
         self.is_stopped = False
+        self.is_quitted = False
 
     async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
         self.user = inter.user
@@ -118,4 +119,11 @@ class Rating(discord.ui.View):
         await interaction.response.defer()
         self.value = "placeholder"
         self.is_stopped = True
+        self.stop()
+
+    @discord.ui.button(label='Quit', style=discord.ButtonStyle.grey)
+    async def _quit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.value = "placeholder"
+        self.is_quitted = True
         self.stop()

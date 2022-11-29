@@ -172,9 +172,8 @@ class LofiTransformerPlayer(commands.Cog):
         emoji = get_instrument_emoji(current_instrument)
         await instrument_setting_message.edit(content=f"Instrument changed to {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=None)
     
-    async def play_music(self, ctx, id, mp3_path, instrument):
+    async def send_rating_view(self, ctx, id, mp3_path, instrument):
         current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
-        source = discord.FFmpegPCMAudio(source=mp3_path)
         vote_embed=discord.Embed(title=f"Now playing... {get_instrument_emoji(instrument)}", color=0xffc7cd)
         vote_embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
         vote_embed.add_field(name="id", value=id, inline=False)
@@ -185,24 +184,35 @@ class LofiTransformerPlayer(commands.Cog):
         vote_embed.timestamp = datetime.datetime.now()
         rating_view = Rating(ctx.author)
         vote_area = await ctx.send(id, embed=vote_embed, view=rating_view)
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
         return vote_area, vote_embed, rating_view
     
-    async def play_command(self, ctx, mp3_path):
+    async def play_music(self, ctx, mp3_path):
         if ctx.voice_client.is_playing():
             ctx.voice_client.stop()
+        source = discord.FFmpegPCMAudio(source=mp3_path)
+        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+    
+    async def play_command(self, ctx, mp3_path, play_music=True):
         id = mp3_path.split("/")[-1].split(".")[0]
         code, instrument = id.split("_")
         instrument = int(instrument)
-        vote_area, embed, rating_view = await self.play_music(ctx, id, mp3_path, instrument)
+        vote_area, embed, rating_view = await self.send_rating_view(ctx, id, mp3_path, instrument)
+        if play_music:
+            await self.play_music(ctx, mp3_path)
         await rating_view.wait()
         if rating_view.value == None:
             print("Rating view timeout.")
             return
         if rating_view.is_stopped:
-            await vote_area.edit(embed=embed, view=None)
             if ctx.voice_client.is_playing():
                 ctx.voice_client.stop()
+            await vote_area.delete()
+            await self.play_command(ctx, mp3_path, play_music=False)
+            return
+        if rating_view.is_quitted:
+            if ctx.voice_client.is_playing():
+                ctx.voice_client.stop()
+            await vote_area.edit(embed=embed, view=None)
             return
         if rating_view.is_skipped:
             await vote_area.edit(embed=embed, view=None)
