@@ -65,9 +65,15 @@ class LofiTransformerPlayer(commands.Cog):
         config = json.dumps(self.config, indent=4)
         with open(CONFIG_PATH, "w") as j:
             j.write(config)
+    
+    @commands.command(name="sync")
+    async def _sync(self, ctx):
+        await ctx.send(f"Sync commands to current guild.")
+        fmt = await ctx.bot.tree.sync()
+        await ctx.send(f"Synced {len(fmt)} commands to current guild.")
         
-    @commands.command()
-    async def model(self, ctx):
+    @commands.hybrid_command(name="model", description="Dropdown menu to set generation model.")
+    async def _model(self, ctx):
         """Show a dropdown selection to set the model to generate song."""
         current_model = self.config["current_model"]
         current_model_emoji = self.config["model_selection"][current_model]["emoji"]
@@ -86,10 +92,9 @@ class LofiTransformerPlayer(commands.Cog):
         await model_select_message.edit(content=f"Model changed to {model_emoji} **{view.value}**", view=None)
         self.select_model(view.value)
 
-    @commands.command()
-    async def list(self, ctx):
+    @commands.hybrid_command(name="list", description="List best songs generated in current model.")
+    async def _list(self, ctx):
         """List mid and mp3 files in server."""
-
         ranking = {}
         for key, val in self.song_stats.items():
             # data[key]["score"] = np.sum([item["vote"] for item in val["rate"]])
@@ -111,8 +116,9 @@ class LofiTransformerPlayer(commands.Cog):
         await ctx.send(embed=embed)
         
     
-    @commands.command()
-    async def get(self, ctx, id=None):
+    # TODO: Fix get command in hybird_command
+    @commands.hybrid_command(name="get", description="Give id to get .mid and .mp3 files of the song.")
+    async def _get(self, ctx, id: str=None):
         if id is None:
             if self.lastfile is None:
                 await ctx.send("No last file.")
@@ -127,8 +133,8 @@ class LofiTransformerPlayer(commands.Cog):
         songs = [discord.File(item) for item in songs]
         await ctx.send(files=songs)
 
-    @commands.command()
-    async def play(self, ctx, id=None):
+    @commands.hybrid_command(name="play", description="Generate a song!")
+    async def _play(self, ctx, id=None):
         """Plays a file from the local filesystem"""
 
         #TODO: Merge with a get function.
@@ -154,13 +160,8 @@ class LofiTransformerPlayer(commands.Cog):
         await hint_msg.delete()
         await self.play_command(ctx, mp3_path)
 
-    @commands.command()
-    async def leave(self, ctx):
-        """Stops and disconnects the bot from voice"""
-        await ctx.voice_client.disconnect()
-    
-    @commands.command()
-    async def instrument(self, ctx):
+    @commands.hybrid_command(name="instrument", description="Dropdown menu to select render instrument.")
+    async def _instrument(self, ctx):
         """Show a dropdown selection to set the MIDI render instrument program number."""
         current_instrument = self.config["instrument"]
         emoji = get_instrument_emoji(current_instrument)
@@ -176,6 +177,11 @@ class LofiTransformerPlayer(commands.Cog):
         current_instrument = self.config["instrument"]
         emoji = get_instrument_emoji(current_instrument)
         await instrument_setting_message.edit(content=f"Instrument changed to {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=None)
+
+    @commands.command()
+    async def leave(self, ctx):
+        """Stops and disconnects the bot from voice"""
+        await ctx.voice_client.disconnect()
     
     async def send_rating_view(self, ctx, id, mp3_path, instrument, votable=True):
         current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
@@ -280,7 +286,7 @@ class LofiTransformerPlayer(commands.Cog):
     def get_instrument_dropdown_view(self, ctx):
         return InstrumentSelectDropdownView(ctx.author)
 
-    @play.before_invoke
+    @_play.before_invoke
     async def ensure_voice(self, ctx):
         if ctx.voice_client is None:
             if ctx.author.voice:
@@ -291,8 +297,8 @@ class LofiTransformerPlayer(commands.Cog):
         elif ctx.voice_client.is_playing():
             ctx.voice_client.stop()
     
-    @list.before_invoke
-    @get.before_invoke
+    @_list.before_invoke
+    @_get.before_invoke
     async def update_dict(self, ctx):
         self.filedict = getfiles(self.out_dir)
 

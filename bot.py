@@ -44,6 +44,9 @@ class Bot(commands.Bot):
         self.update_avatar.start()
         for ext in self.initial_extensions:
             await self.load_extension(ext)
+        logger.info("Syncing command to global...")
+        cmds = await self.tree.sync()
+        logger.info(f"{len(cmds)} commands synced!")
 
     def switch_avatar(self, is_day: True):
         if is_day:
