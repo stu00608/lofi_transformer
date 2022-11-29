@@ -3,7 +3,7 @@
 ## Installation
 
 ```
-git clone --recurse-submodules -j8 <this-package>
+git clone --recurse-submodules -j8 https://github.com/stu00608/lofi_transformer.git -b docker
 ```
 
 ```
