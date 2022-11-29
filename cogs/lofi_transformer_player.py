@@ -172,7 +172,7 @@ class LofiTransformerPlayer(commands.Cog):
         emoji = get_instrument_emoji(current_instrument)
         await instrument_setting_message.edit(content=f"Instrument changed to {emoji} **{pretty_midi.program_to_instrument_name(current_instrument)}**", view=None)
     
-    async def send_rating_view(self, ctx, id, mp3_path, instrument):
+    async def send_rating_view(self, ctx, id, mp3_path, instrument, votable=True):
         current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
         vote_embed=discord.Embed(title=f"Now playing... {get_instrument_emoji(instrument)}", color=0xffc7cd)
         vote_embed.set_thumbnail(url="https://media1.giphy.com/media/mXbQ2IU02cGRhBO2ye/giphy.gif")
@@ -182,7 +182,7 @@ class LofiTransformerPlayer(commands.Cog):
         vote_embed.add_field(name="model", value=f"{current_model_emoji} {self.current_model}", inline=False)
         vote_embed.set_footer(text="Please rate the song ⏬")
         vote_embed.timestamp = datetime.datetime.now()
-        rating_view = Rating(ctx.author)
+        rating_view = Rating(ctx.author, votable=votable)
         vote_area = await ctx.send(id, embed=vote_embed, view=rating_view)
         return vote_area, vote_embed, rating_view
     
@@ -192,32 +192,28 @@ class LofiTransformerPlayer(commands.Cog):
         source = discord.FFmpegPCMAudio(source=mp3_path)
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
     
-    async def play_command(self, ctx, mp3_path, play_music=True):
+    async def play_command(self, ctx, mp3_path, play_music=True, votable=True):
         id = mp3_path.split("/")[-1].split(".")[0]
         code, instrument = id.split("_")
         instrument = int(instrument)
-        vote_area, embed, rating_view = await self.send_rating_view(ctx, id, mp3_path, instrument)
+        vote_area, embed, rating_view = await self.send_rating_view(ctx, id, mp3_path, instrument, votable)
         if play_music:
             await self.play_music(ctx, mp3_path)
         await rating_view.wait()
         if rating_view.value == None:
             print("Rating view timeout.")
-            return
-        if rating_view.is_stopped:
+        elif rating_view.is_stopped:
             if ctx.voice_client.is_playing():
                 ctx.voice_client.stop()
             await vote_area.delete()
             await self.play_command(ctx, mp3_path, play_music=False)
-            return
-        if rating_view.is_quitted:
+        elif rating_view.is_quitted:
             if ctx.voice_client.is_playing():
                 ctx.voice_client.stop()
             await vote_area.edit(embed=embed, view=None)
-            return
-        if rating_view.is_skipped:
+        elif rating_view.is_skipped:
             await vote_area.edit(embed=embed, view=None)
-            return
-        if rating_view.is_rerender:
+        elif rating_view.is_rerender:
             view = self.get_instrument_dropdown_view(ctx)
             await vote_area.edit(embed=embed, view=view)
 
@@ -247,28 +243,27 @@ class LofiTransformerPlayer(commands.Cog):
             
             await hint_msg.delete()
             await self.play_command(ctx, mp3_path)
-            return
-
-        rate = {"user": rating_view.user.name+"#"+rating_view.user.discriminator, "vote": rating_view.value}
-
-        if id not in self.song_stats.keys():
-            self.song_stats[id] = {
-                "code": code,
-                "time": get_audio_time(mp3_path),
-                "instrument": instrument,
-                "model": self.current_model,
-                "path": mp3_path,
-                "view": 1,
-                "rate": [rate],
-                "score": None
-            }
         else:
-            self.song_stats[id]["view"] += 1
-            self.song_stats[id]["rate"].append(rate)
+            if votable:
+                rate = {"user": rating_view.user.name+"#"+rating_view.user.discriminator, "vote": rating_view.value}
+                if id not in self.song_stats.keys():
+                    self.song_stats[id] = {
+                        "code": code,
+                        "time": get_audio_time(mp3_path),
+                        "instrument": instrument,
+                        "model": self.current_model,
+                        "path": mp3_path,
+                        "view": 1,
+                        "rate": [rate],
+                        "score": None
+                    }
+                else:
+                    self.song_stats[id]["view"] += 1
+                    self.song_stats[id]["rate"].append(rate)
         
-        self.save_stats()
-        
-        await vote_area.edit(embed=embed, view=None)
+                self.save_stats()
+            await vote_area.edit(embed=embed, view=None)
+            await self.play_command(ctx, mp3_path, play_music=False, votable=False)
 
     def get_instrument_dropdown_view(self, ctx):
         return InstrumentSelectDropdownView(ctx.author)

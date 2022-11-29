@@ -51,7 +51,7 @@ class InstrumentSelectDropdownView(discord.ui.View):
 
 # Define a simple View that gives us a confirmation menu
 class Rating(discord.ui.View):
-    def __init__(self, author: typing.Union[discord.Member, discord.User]):
+    def __init__(self, author: typing.Union[discord.Member, discord.User], votable=True):
         super().__init__()
         self.value = None
         self.author = author
@@ -60,6 +60,7 @@ class Rating(discord.ui.View):
         self.is_rerender = False
         self.is_stopped = False
         self.is_quitted = False
+        self.votable = votable
 
     async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
         self.user = inter.user
@@ -73,31 +74,47 @@ class Rating(discord.ui.View):
     # We also send the user an ephemeral message that we're confirming their choice.
     @discord.ui.button(label='1', style=discord.ButtonStyle.grey)
     async def _one(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 1, thank you!', ephemeral=True)
+        if self.votable:
+            await interaction.response.send_message('You rated 1, thank you ❗', ephemeral=True)
+        else:
+            await interaction.response.send_message('You already voted ‼️', ephemeral=True)
         self.value = 1
         self.stop()
 
     @discord.ui.button(label='2', style=discord.ButtonStyle.grey)
     async def _two(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 2, thank you!', ephemeral=True)
+        if self.votable:
+            await interaction.response.send_message('You rated 2, thank you ❗', ephemeral=True)
+        else:
+            await interaction.response.send_message('You already voted ‼️', ephemeral=True)
         self.value = 2
         self.stop()
 
     @discord.ui.button(label='3', style=discord.ButtonStyle.grey)
     async def _three(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 3, thank you!', ephemeral=True)
+        if self.votable:
+            await interaction.response.send_message('You rated 3, thank you ❗', ephemeral=True)
+        else:
+            await interaction.response.send_message('You already voted ‼️', ephemeral=True)
+
         self.value = 3
         self.stop()
 
     @discord.ui.button(label='4', style=discord.ButtonStyle.grey)
     async def _four(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 4, thank you!', ephemeral=True)
+        if self.votable:
+            await interaction.response.send_message('You rated 4, thank you ❗', ephemeral=True)
+        else:
+            await interaction.response.send_message('You already voted ‼️', ephemeral=True)
         self.value = 4
         self.stop()
 
     @discord.ui.button(label='5', style=discord.ButtonStyle.grey)
     async def _five(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('You rated 5, thank you!', ephemeral=True)
+        if self.votable:
+            await interaction.response.send_message('You rated 5, thank you ❗', ephemeral=True)
+        else:
+            await interaction.response.send_message('You already voted ‼️', ephemeral=True)
         self.value = 5
         self.stop()
         
