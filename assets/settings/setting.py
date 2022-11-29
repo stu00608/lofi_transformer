@@ -9,7 +9,7 @@ LOGGING_CONFIG = {
             "format": "%(levelname)-10s - %(asctime)s - %(module)-15s : %(message)s"
         },
         "standard":{
-            "format": "%(levelname)-10s - %(name)-15s : %(message)s"
+            "format": "%(levelname)-6s - %(name)-20s : %(message)s"
         }
     }, 
     "handlers":{

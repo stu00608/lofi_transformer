@@ -5,13 +5,17 @@ import json
 import pretty_midi
 import discord
 import datetime
+import logging
 import numpy as np
 from discord.ext import commands
+import assets.settings.setting as setting
 from generate import generate_song, render_midi
 from bot_utils.utils import get_audio_time, getfiles, get_instrument_emoji
 from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView, ModelSelectDropdownView
 
 CONFIG_PATH = "./config/config.json"
+
+logger = setting.logging.getLogger("lofi_transformer")
 
 
 class LofiTransformerPlayer(commands.Cog):
@@ -21,6 +25,7 @@ class LofiTransformerPlayer(commands.Cog):
         self.load_config()
         self.select_model(self.config["current_model"])
         self.lastfile = None
+        logger.info("Lofi Transformer Cog loaded!")
 
     def select_model(self, model):
         self.config["current_model"] = model
@@ -75,7 +80,7 @@ class LofiTransformerPlayer(commands.Cog):
 
         await view.wait()
         if view.value == None:
-            print("Model select view timeout.")
+            logger.info("Model selection view timeout")
             return
         model_emoji = self.config["model_selection"][view.value]["emoji"]
         await model_select_message.edit(content=f"Model changed to {model_emoji} **{view.value}**", view=None)
@@ -164,7 +169,7 @@ class LofiTransformerPlayer(commands.Cog):
 
         await view.wait()
         if view.value == None:
-            print("Instrument select view timeout.")
+            logger.info("Instrument select view timeout.")
             return
         self.config["instrument"] = int(view.value)
         self.save_config()
@@ -190,7 +195,7 @@ class LofiTransformerPlayer(commands.Cog):
         if ctx.voice_client.is_playing():
             ctx.voice_client.stop()
         source = discord.FFmpegPCMAudio(source=mp3_path)
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+        ctx.voice_client.play(source, after=lambda e: logger.error(f'Player error: {e}') if e else None)
     
     async def play_command(self, ctx, mp3_path, play_music=True, votable=True):
         id = mp3_path.split("/")[-1].split(".")[0]
@@ -201,7 +206,7 @@ class LofiTransformerPlayer(commands.Cog):
             await self.play_music(ctx, mp3_path)
         await rating_view.wait()
         if rating_view.value == None:
-            print("Rating view timeout.")
+            logger.info("Rating view timeout.")
         elif rating_view.is_replay:
             await vote_area.edit(embed=embed, view=None)
             await self.play_command(ctx, mp3_path)
@@ -222,7 +227,7 @@ class LofiTransformerPlayer(commands.Cog):
 
             await view.wait()
             if view.value == None:
-                print("Re-render view timeout.")
+                logger.info("Re-render view timeout.")
                 return
             await vote_area.edit(embed=embed, view=None)
             instrument = int(view.value)
