@@ -1,6 +1,3 @@
-[submodule "emopia"]
-	path = emopia
-	url = https://github.com/annahung31/EMOPIA.git
 [submodule "fast-transformers"]
 	path = fast-transformers
 	url = https://github.com/idiap/fast-transformers.git
