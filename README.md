@@ -69,6 +69,40 @@ docker attach <container id>
 docker exec --user root -it <container id> /bin/bash
 ```
 
+## Run in local (Need test)
+
+1. Make sure you have installed CUDA supported nvidia GPU driver by running `nvidia-smi`
+2. Install `ffmpeg`
+    ```
+    sudo apt-get install ffmpeg
+    ```
+3. Install `fluidsynth`
+    ```
+    sudo apt-get install fluidsynth
+    ```
+4. Make a conda environment with python 3.8.13
+    ```
+    conda create -n lofi_transformer_bot python=3.8
+    ```
+    * Then enter the environment.
+5. Install pytorch 1.8.2 (For cuda 11.1, running on RTX 3090).
+    ```
+    conda install pytorch torchvision torchaudio cudatoolkit=11.1 -c pytorch-lts -c nvidia
+    ```
+6. Clone `fast_transformers` and build it.
+    ```
+    git clone https://github.com/idiap/fast-transformers.git -b v0.4.0
+    pip install -e fast-transformers
+    ```
+7. Install dependencies for discord bot and model inference.
+    ```
+    pip install -r requirements.txt
+    ```
+8. Run `bot.py` to start the discord bot.
+    ```
+    python bot.py
+    ```
+   
 ## Build Environment Base Image
 * The built image is pushed to [dockerhub](https://hub.docker.com/repository/docker/stu00608/lofi_transformer_base)
 
