@@ -1,0 +1,30 @@
+FROM nvidia/cuda:11.4.1-cudnn8-runtime-ubuntu18.04
+
+RUN rm /etc/apt/sources.list.d/cuda.list
+RUN apt-get update -y
+RUN apt-get install -y \ 
+    ffmpeg \
+    fluidsynth \
+    wget \
+    git \
+    build-essential \
+    zlib1g-dev \
+    libncurses5-dev \
+    libgdbm-dev \
+    libnss3-dev \
+    libssl-dev \
+    libreadline-dev \
+    libffi-dev \
+    libsqlite3-dev \
+    libbz2-dev
+RUN wget https://www.python.org/ftp/python/3.8.13/Python-3.8.13.tgz
+RUN tar -xf Python-3.8.13.tgz
+WORKDIR /Python-3.8.13
+RUN ./configure --enable-optimizations
+RUN make -j8
+RUN make altinstall
+RUN python3.8 -m pip install torch==1.8.2 --extra-index-url https://download.pytorch.org/whl/lts/1.8/cu111
+
+WORKDIR /app
+RUN git clone https://github.com/idiap/fast-transformers.git -b v0.4.0
+RUN python3.8 -m pip install -e fast-transformers

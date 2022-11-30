@@ -4,45 +4,62 @@
 
 ```
 git clone --recurse-submodules -j8 https://github.com/stu00608/lofi_transformer.git -b docker
+cd lofi_transformer
+
+# use gdown to download model, to install: `pip install gdown`. Or download manually from https://drive.google.com/file/d/1Gzt2UhysZzHPCz7XEDjkf-IjWh1O7fcx/view?usp=sharing.
+gdown 1Gzt2UhysZzHPCz7XEDjkf-IjWh1O7fcx
+
+unzip exp.zip
+
+# https://drive.google.com/file/d/1UQD2oDsncw339FOUOQgAAmZx87CzZai0/view?usp=sharing
+gdown 1UQD2oDsncw339FOUOQgAAmZx87CzZai0
+
+unzip lofi_dataset.zip
+
+rm exp.zip lofi_dataset.zip
+```
+
+* Your bot need these permission to run properly.
+(img here)
+* Set your own discord bot token.
+```
+export BOT_TOKEN="put token here"
+```
+
+## Discord bot Docker Container
+
+
+* Run docker build command.
+```
+docker build --no-cache -t lofi_transformer_bot --build-arg token=$BOT_TOKEN .
 ```
 
 ```
-conda create -y -n lofi_transformers python=3.8
-conda activate lofi_transformers
-conda install -y -c conda-forge cudatoolkit-dev
-conda install -y pytorch torchvision torchaudio -c pytorch-lts -c nvidia
-pip install -r requirements.txt
-pip install -e fast-transformers
+docker run --rm -it --gpus all lofi_transformer_bot
+
+# -d for running in background.
+docker run --rm -dit --gpus all lofi_transformer_bot
 ```
 
+### Get generated files and stats in container to current folder
 ```
-gdown 14vXsPerw02e7YBrxKMlgkvSB9wD48qVx
-unzip processed_lofi_dataset.zip
+docker cp <container id>:/app/gen .
 ```
-
+### attach container
 ```
-gdown 19Seq18b2JNzOamEQMG1uarKjj27HJkHu --output exp/pretrained_transformer.zip
-unzip exp/pretrained_transformer.zip -d exp/ 
+docker attach <container id>
 ```
-
+### detach container
+* Ctrl+P -> Ctrl+Q
+### Run bash in existing container
 ```
-# Train (finetune)
-python emopia/workspace/transformer/main_cp.py --task_type ignore --data_root lofi_dataset --path_train_data train --load_dict dictionary.pkl --exp_name finetune_lofi --load_ckt pretrained_transformer --load_ckt_loss 25
-
-# Inference
-python emopia/workspace/transformer/main_cp.py --mode inference --load_dict dictionary.pkl --data_root lofi_dataset --path_train_data train --exp_name finetune_lofi --load_ckt finetune_lofi --task_type ignore --num_songs 5 --load_ckt_loss 8 --out_dir gen/finetune_lofi/8
+docker exec --user root -it <container id> /bin/bash
 ```
 
+## Build Environment Base Image
+* The built image is pushed to [dockerhub](https://hub.docker.com/repository/docker/stu00608/lofi_transformer_base)
 
-* Need to manually copy `utils`, `saver`, `models` from `emopia/workspace/transformer` to make `generate.py` workable.
-* You'll also need to put a `.sf2` soundfont file into `soundfonts` folder to render the midi file to audio.
-    * For example [A320U.sf2 from signal](https://github.com/ryohey/signal/blob/main/public/A320U.sf2)
-
-## Discord bot
-
-* Set your own token.
 ```
-token = os.environ["BOT_TOKEN"]
+# python 3.8.13, torch 1.8.2, fast_transformers 0.4.0, cuda 11.4, cudnn 8, ubuntu 18.04 
+docker build --no-cache -t lofi_transformer_base --build-arg token=$BOT_TOKEN -f BaseDockerfile .
 ```
-
-* Comment line 453 in `emopia/workspace/transformer/main_cp.py` to prevent saving .npy files.

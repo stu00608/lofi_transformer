@@ -1,3 +1,0 @@
-[submodule "fast-transformers"]
-	path = fast-transformers
-	url = https://github.com/idiap/fast-transformers.git
