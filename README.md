@@ -5,20 +5,32 @@
 ```
 git clone https://github.com/stu00608/lofi_transformer.git -b docker
 cd lofi_transformer
+```
 
-# use gdown to download model, to install: `pip install gdown`. Or download manually from https://drive.google.com/file/d/1Gzt2UhysZzHPCz7XEDjkf-IjWh1O7fcx/view?usp=sharing.
+
+* use gdown to download model, to install: `pip install gdown`. Or download manually from 
+* [Download Link](https://drive.google.com/file/d/1Gzt2UhysZzHPCz7XEDjkf-IjWh1O7fcx/view?usp=sharing)
+* And then unzip in repo root folder.
+```
 gdown 1Gzt2UhysZzHPCz7XEDjkf-IjWh1O7fcx
-
 unzip exp.zip
+```
 
-# https://drive.google.com/file/d/1UQD2oDsncw339FOUOQgAAmZx87CzZai0/view?usp=sharing
+* use gdown to download dataset(dictionary). Or download manually from 
+* [Download Link](https://drive.google.com/file/d/1UQD2oDsncw339FOUOQgAAmZx87CzZai0/view?usp=sharing)
+* And then unzip in repo root folder.
+```
 gdown 1UQD2oDsncw339FOUOQgAAmZx87CzZai0
 
 unzip lofi_dataset.zip
+```
 
+* Delete them to release some space.
+```
 rm exp.zip lofi_dataset.zip
 ```
 
+* Go to Discord portal, create a bot application.
 * Your bot need these permission to run properly.
     ![SCR-20221129-pz4](https://user-images.githubusercontent.com/40068587/204803016-81c18476-7d0e-4b4d-9e73-d0ffe3ea690d.png)
 
