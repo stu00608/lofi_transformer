@@ -230,7 +230,7 @@ class LofiTransformerPlayer(commands.Cog):
         elif rating_view.is_skipped:
             await vote_area.edit(embed=embed, view=None)
             await self.ensure_voice(ctx)
-            await self.play(ctx)
+            await self._play(ctx)
         elif rating_view.is_rerender:
             view = self.get_instrument_dropdown_view(ctx)
             await vote_area.edit(embed=embed, view=view)
