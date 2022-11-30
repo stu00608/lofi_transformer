@@ -3,7 +3,7 @@
 ## Installation
 
 ```
-git clone --recurse-submodules -j8 https://github.com/stu00608/lofi_transformer.git -b docker
+git clone https://github.com/stu00608/lofi_transformer.git -b docker
 cd lofi_transformer
 
 # use gdown to download model, to install: `pip install gdown`. Or download manually from https://drive.google.com/file/d/1Gzt2UhysZzHPCz7XEDjkf-IjWh1O7fcx/view?usp=sharing.
