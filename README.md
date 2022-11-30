@@ -20,7 +20,8 @@ rm exp.zip lofi_dataset.zip
 ```
 
 * Your bot need these permission to run properly.
-(img here)
+    ![SCR-20221129-pz4](https://user-images.githubusercontent.com/40068587/204803016-81c18476-7d0e-4b4d-9e73-d0ffe3ea690d.png)
+
 * Set your own discord bot token.
 ```
 export BOT_TOKEN="put token here"
