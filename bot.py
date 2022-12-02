@@ -25,7 +25,9 @@ class Bot(commands.Bot):
         super().__init__(
             command_prefix=commands.when_mentioned_or('!'), 
             intents=intents,
-            description=description
+            description=description,
+            activity=discord.Activity(type=discord.ActivityType.listening, name="後藤さんの呪いだわ..."),
+            status=discord.Status.online
         )
 
         self.initial_extensions = [
