@@ -91,7 +91,7 @@ def render_midi(instrument, out_dir, filename, soundfont="./soundfonts/A320U.sf2
 
     # convert to mp3
     wav = AudioSegment.from_wav(wav_file_path)
-    wav += 5
+    wav += 20
     wav.export(mp3_file_path, format="mp3")
     print(f"{mp3_file_path} exported!")
     os.remove(wav_file_path)
