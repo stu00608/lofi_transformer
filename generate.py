@@ -15,7 +15,7 @@ from utils import write_midi, get_random_string
 
 DATASET_PATH = "./lofi_dataset"
 
-def generate_song(instrument, ckpt_path, num_songs=1, out_dir="gen"):
+def generate_song(instrument, ckpt_path, num_songs=1, out_dir="gen", display=True):
     os.makedirs(out_dir, exist_ok=True)
 
     dictionary = pickle.load(open(os.path.join(DATASET_PATH, "dictionary.pkl"), 'rb'))
@@ -49,7 +49,7 @@ def generate_song(instrument, ckpt_path, num_songs=1, out_dir="gen"):
     while(gen_songs < num_songs):
         res = None
         if n_token == 8:
-            res, _ = net.inference_from_scratch(dictionary, 0, n_token)
+            res, _ = net.inference_from_scratch(dictionary, 0, n_token, display=display)
             if res is None:
                 continue
 
@@ -92,6 +92,7 @@ def render_midi(instrument, out_dir, filename, soundfont="./soundfonts/A320U.sf2
     # convert to mp3
     wav = AudioSegment.from_wav(wav_file_path)
     wav += 20
+    wav = wav.fade_in(2000).fade_out(3000)
     wav.export(mp3_file_path, format="mp3")
     print(f"{mp3_file_path} exported!")
     os.remove(wav_file_path)

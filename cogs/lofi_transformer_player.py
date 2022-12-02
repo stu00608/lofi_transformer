@@ -7,6 +7,7 @@ import discord
 import datetime
 import logging
 import random
+import asyncio
 import numpy as np
 from discord.ext import commands
 import assets.settings.setting as setting
@@ -17,6 +18,8 @@ from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView, Model
 CONFIG_PATH = "./config/config.json"
 
 logger = setting.logging.getLogger("lofi_transformer")
+queue = []
+keep_looping = False
 
 
 class LofiTransformerPlayer(commands.Cog):
@@ -310,6 +313,127 @@ class LofiTransformerPlayer(commands.Cog):
                 self.save_stats()
             await vote_area.edit(embed=embed, view=None)
             await self.play_command(ctx, mp3_path, play_music=False, votable=False)
+    
+    @commands.hybrid_command(name="loop", description="Infinitely generate songs and play with current model and instrument setting.")
+    async def _loop(self, ctx):
+        global keep_looping
+        if keep_looping:
+            logger.debug("Already in loop.")
+            return
+        
+        keep_looping = True
+        await ctx.defer()
+        task = asyncio.create_task(self.generate_song(2))
+        logger.debug("Waiting first generation task finish.")
+        await task
+        logger.debug("Started to play loop.")
+        await ctx.send("Started to play loop. Call /stop to terminate.")
+        loop_task = asyncio.create_task(self.play_loop(ctx))
+        await self.generate_song_task(3)
+    
+    @commands.hybrid_command(name="pause", description="Pause the playing audio.")
+    async def _pause_media(self, ctx):
+        if not ctx.message.author.voice:
+            await ctx.send("You are not connected to a voice channel.")
+            return
+        await ctx.defer()
+        server = ctx.message.guild
+        voice_channel = server.voice_client
+
+        voice_channel.pause()
+        await ctx.send("Paused", ephemeral=True)
+
+    @commands.hybrid_command(name="resume", description="Resume the playing audio.")
+    async def _resume_media(self, ctx):
+        if not ctx.message.author.voice:
+            await ctx.send("You are not connected to a voice channel.")
+            return
+        await ctx.defer()
+        server = ctx.message.guild
+        voice_channel = server.voice_client
+
+        voice_channel.resume()
+        await ctx.send("Resumed", ephemeral=True)
+
+    @commands.hybrid_command(name="stop", description="Stop the playing audio.")
+    async def _stop_media(self, ctx):
+        global queue
+        queue = []
+        global keep_looping
+        keep_looping = False
+        if not ctx.message.author.voice:
+            await ctx.send("You are not connected to a voice channel.")
+            return
+        await ctx.defer()
+        server = ctx.message.guild
+        voice_channel = server.voice_client
+
+        voice_channel.stop()
+        await ctx.send("Stopped", ephemeral=True)
+
+    async def generate_song(self, num_songs=5):
+        """Generate the song asynchronously, store path in global queue."""
+        global queue
+
+        while(len(queue) < num_songs and keep_looping):
+            logger.debug("Generating...")
+            path = generate_song(
+                instrument=int(self.config["instrument"]),
+                ckpt_path=self.current_model_ckpt,
+                out_dir=self.out_dir,
+                display=False
+            )[0]
+            logger.debug("Finished!")
+            mid_path, mp3_path = path
+            queue.append(mp3_path)
+
+    async def generate_song_task(self, num_songs=5):
+        global queue
+
+        while(keep_looping):
+            while(len(queue) >= num_songs):
+                if not keep_looping:
+                    return
+                logger.debug("Queue full now.")
+                await asyncio.sleep(3)
+            logger.debug("Generating...")
+            path = generate_song(
+                instrument=int(self.config["instrument"]),
+                ckpt_path=self.current_model_ckpt,
+                out_dir=self.out_dir,
+                display=False
+            )[0]
+            logger.debug("Finished!")
+            mid_path, mp3_path = path
+            queue.append(mp3_path)
+
+    async def play_loop(self, ctx):
+        global queue
+        global keep_looping
+
+        if not ctx.message.author.voice:
+            await ctx.send("You are not connected to a voice channel.")
+        elif len(queue) == 0:
+            await ctx.send("Playing queue is empty.")
+        else:
+            await self.ensure_voice(ctx)
+            voice_client = ctx.message.guild.voice_client
+            while queue and keep_looping:
+                try:
+                    while voice_client.is_playing() or voice_client.is_paused():
+                        logger.debug(f"Hi in loop. {queue}")
+                        await asyncio.sleep(3)
+                except AttributeError:
+                    logger.error("Attribute error.")
+                try:
+                    logger.debug(f"Play song: {queue[0]} {get_audio_time(queue[0])}")
+                    source = discord.FFmpegPCMAudio(source=queue[0])
+                    ctx.voice_client.play(source, after=lambda e: logger.error(f'Player error: {e}') if e else None)
+                    del(queue[0])
+                except:
+                    logger.error("Got error in play section.")
+                    break
+
 
     def get_instrument_dropdown_view(self, ctx):
         return InstrumentSelectDropdownView(ctx.author)
