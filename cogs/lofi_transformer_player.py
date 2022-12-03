@@ -81,6 +81,7 @@ class LofiTransformerPlayer(commands.Cog):
     @commands.hybrid_command(name="pick", description="Pick random song from best samples.")
     async def _pick(self, ctx):
         """Pick randomly from songs that not voted by user in current model."""
+        await self.stop_looping()
         self.load_stats()
         pickable_songs = []
         for key, val in self.song_stats.items():
@@ -163,6 +164,7 @@ class LofiTransformerPlayer(commands.Cog):
     @commands.hybrid_command(name="play", description="Generate a song!")
     async def _play(self, ctx, id=None):
         """Plays a file from the local filesystem"""
+        await self.stop_looping()
         if id is None:
             instrument = self.config["instrument"]
             current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
@@ -170,7 +172,8 @@ class LofiTransformerPlayer(commands.Cog):
             path = generate_song(
                 instrument=int(instrument),
                 ckpt_path=self.current_model_ckpt,
-                out_dir=self.out_dir
+                out_dir=self.out_dir,
+                display=False
             )[0]
             mid_path, mp3_path = path
             await self.update_dict(ctx)
@@ -316,20 +319,29 @@ class LofiTransformerPlayer(commands.Cog):
     
     @commands.hybrid_command(name="loop", description="Infinitely generate songs and play with current model and instrument setting.")
     async def _loop(self, ctx):
+        global queue
         global keep_looping
-        if keep_looping:
+
+        response = await self.ensure_voice(ctx)
+        if not response:
+            logger.debug("Quit loop command")
+            return
+        server = ctx.message.guild
+        voice_client = server.voice_client
+        if keep_looping and (voice_client.is_playing() or voice_client.is_paused()): # NOTE: If keep_looping and playing, prevent task reinvoke.
             logger.debug("Already in loop.")
             return
         
         keep_looping = True
-        await ctx.defer()
-        task = asyncio.create_task(self.generate_song(2))
-        logger.debug("Waiting first generation task finish.")
-        await task
+        if len(queue) == 0:
+            await ctx.defer()
+            task = asyncio.create_task(self.generate_song(2))
+            logger.debug("Waiting first generation task finish.")
+            await task
         logger.debug("Started to play loop.")
         await ctx.send("Started to play loop. Call /stop to terminate.")
         loop_task = asyncio.create_task(self.play_loop(ctx))
-        await self.generate_song_task(3)
+        await self.generate_song_task(ctx, 3)
     
     @commands.hybrid_command(name="pause", description="Pause the playing audio.")
     async def _pause_media(self, ctx):
@@ -368,8 +380,17 @@ class LofiTransformerPlayer(commands.Cog):
         server = ctx.message.guild
         voice_channel = server.voice_client
 
-        voice_channel.stop()
+        if voice_channel:
+            voice_channel.stop()
         await ctx.send("Stopped", ephemeral=True)
+    
+    async def stop_looping(self):
+        global keep_looping
+        if not keep_looping:
+            return
+        keep_looping = False
+        logger.debug("Wait 2 sec to stop looping")
+        await asyncio.sleep(2)
 
     async def generate_song(self, num_songs=5):
         """Generate the song asynchronously, store path in global queue."""
@@ -380,19 +401,20 @@ class LofiTransformerPlayer(commands.Cog):
             path = generate_song(
                 instrument=int(self.config["instrument"]),
                 ckpt_path=self.current_model_ckpt,
-                out_dir=self.out_dir,
+                out_dir="./loop_file",
                 display=False
             )[0]
             logger.debug("Finished!")
             mid_path, mp3_path = path
-            queue.append(mp3_path)
+            queue.append(path)
 
-    async def generate_song_task(self, num_songs=5):
+    async def generate_song_task(self, ctx, num_songs=5):
         global queue
 
         while(keep_looping):
             while(len(queue) >= num_songs):
-                if not keep_looping:
+                if not keep_looping or not ctx.voice_client:
+                    logger.debug("Quit from generate_song_task")
                     return
                 logger.debug("Queue full now.")
                 await asyncio.sleep(3)
@@ -400,12 +422,12 @@ class LofiTransformerPlayer(commands.Cog):
             path = generate_song(
                 instrument=int(self.config["instrument"]),
                 ckpt_path=self.current_model_ckpt,
-                out_dir=self.out_dir,
+                out_dir="./loop_file",
                 display=False
             )[0]
             logger.debug("Finished!")
             mid_path, mp3_path = path
-            queue.append(mp3_path)
+            queue.append(path)
 
     async def play_loop(self, ctx):
         global queue
@@ -426,12 +448,16 @@ class LofiTransformerPlayer(commands.Cog):
                 except AttributeError:
                     logger.error("Attribute error.")
                 try:
-                    logger.debug(f"Play song: {queue[0]} {get_audio_time(queue[0])}")
-                    source = discord.FFmpegPCMAudio(source=queue[0])
+                    mid_path, mp3_path = queue[0]
+                    logger.debug(f"Play song: {mp3_path} {get_audio_time(mp3_path)}")
+                    source = discord.FFmpegPCMAudio(source=mp3_path)
                     ctx.voice_client.play(source, after=lambda e: logger.error(f'Player error: {e}') if e else None)
+                    await asyncio.sleep(2)
+                    os.remove(mid_path)
+                    os.remove(mp3_path)
                     del(queue[0])
-                except:
-                    logger.error("Got error in play section.")
+                except Exception as e:
+                    logger.error(f"Got error in play section. \n{e}")
                     break
 
 
@@ -445,9 +471,11 @@ class LofiTransformerPlayer(commands.Cog):
                 await ctx.author.voice.channel.connect()
             else:
                 await ctx.send("You are not connected to a voice channel.")
-                raise commands.CommandError("Author not connected to a voice channel.")
+                # raise commands.CommandError("Author not connected to a voice channel.")
+                return False
         elif ctx.voice_client.is_playing():
             ctx.voice_client.stop()
+        return True
     
     @_list.before_invoke
     @_get.before_invoke
