@@ -12,7 +12,7 @@ import numpy as np
 from colorama import Fore, init
 from discord.ext import commands
 import assets.settings.setting as setting
-from generate import generate_song, render_midi
+from generate import generate, render_midi_to_mp3 
 from bot_utils.utils import get_audio_time, getfiles, get_instrument_emoji
 from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView, ModelSelectDropdownView
 init()
@@ -172,12 +172,12 @@ class LofiTransformerPlayer(commands.Cog):
             instrument = self.config["instrument"]
             current_model_emoji = self.config["model_selection"][self.current_model]["emoji"]
             hint_msg = await ctx.send(f"Generating...\nmodel: {current_model_emoji} **{self.current_model}**\ninstrument: {get_instrument_emoji(instrument)} **{pretty_midi.program_to_instrument_name(instrument)}**", file=discord.File("img/bocchi.gif"))
-            path = generate_song(
+            path = generate(
+                ckpt=self.current_model_ckpt,
+                out=self.out_dir,
                 instrument=int(instrument),
-                ckpt_path=self.current_model_ckpt,
-                out_dir=self.out_dir,
                 display=False
-            )[0]
+            )
             mid_path, mp3_path = path
             await self.update_dict(ctx)
             self.lastfile = path
@@ -280,10 +280,11 @@ class LofiTransformerPlayer(commands.Cog):
             complete_id = code+"_"+str(instrument)
             if complete_id not in self.filedict.keys():
                 hint_msg = await ctx.send(f"Rendering file to {get_instrument_emoji(instrument)}...")
-                path = render_midi(
-                    instrument=instrument,
+                path = render_midi_to_mp3(
+                    mid_file_path=self.out_dir+code+".mid",
                     out_dir=self.out_dir,
-                    filename=code
+                    instrument=instrument,
+                    mp3_file_path=self.out_dir+code+f"_{instrument}"+".mp3"
                 )
                 mid_path, mp3_path = path
                 await self.update_dict(ctx)
@@ -393,12 +394,12 @@ class LofiTransformerPlayer(commands.Cog):
         """Generate the song asynchronously, store path in global queue."""
         while(len(self.queue) < num_songs and self.keep_looping):
             logger.debug("Generating...")
-            path = generate_song(
+            path = generate(
+                ckpt=self.current_model_ckpt,
+                out="./loop_file",
                 instrument=int(self.config["instrument"]),
-                ckpt_path=self.current_model_ckpt,
-                out_dir="./loop_file",
                 display=False
-            )[0]
+            )
             logger.debug("Finished!")
             mid_path, mp3_path = path
             self.queue.append(path)
@@ -412,12 +413,12 @@ class LofiTransformerPlayer(commands.Cog):
                 logger.debug("Queue full now.")
                 await asyncio.sleep(3)
             logger.debug("Generating...")
-            path = generate_song(
+            path = generate(
+                ckpt=self.current_model_ckpt,
+                out="./loop_file",
                 instrument=int(self.config["instrument"]),
-                ckpt_path=self.current_model_ckpt,
-                out_dir="./loop_file",
                 display=False
-            )[0]
+            )
             logger.debug("Finished!")
             mid_path, mp3_path = path
             self.queue.append(path)
