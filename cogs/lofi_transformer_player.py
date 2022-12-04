@@ -9,17 +9,17 @@ import logging
 import random
 import asyncio
 import numpy as np
+from colorama import Fore, init
 from discord.ext import commands
 import assets.settings.setting as setting
 from generate import generate_song, render_midi
 from bot_utils.utils import get_audio_time, getfiles, get_instrument_emoji
 from assets.scripts.bot_views import Rating, InstrumentSelectDropdownView, ModelSelectDropdownView
+init()
 
 CONFIG_PATH = "./config/config.json"
 
 logger = setting.logging.getLogger("lofi_transformer")
-queue = []
-keep_looping = False
 
 
 class LofiTransformerPlayer(commands.Cog):
@@ -29,6 +29,9 @@ class LofiTransformerPlayer(commands.Cog):
         self.load_config()
         self.select_model(self.config["current_model"])
         self.lastfile = None
+
+        self.queue = []
+        self.keep_looping = False
         logger.info("Lofi Transformer Cog loaded!")
 
     def select_model(self, model):
@@ -319,21 +322,18 @@ class LofiTransformerPlayer(commands.Cog):
     
     @commands.hybrid_command(name="loop", description="Infinitely generate songs and play with current model and instrument setting.")
     async def _loop(self, ctx):
-        global queue
-        global keep_looping
-
         response = await self.ensure_voice(ctx)
         if not response:
             logger.debug("Quit loop command")
             return
         server = ctx.message.guild
         voice_client = server.voice_client
-        if keep_looping and (voice_client.is_playing() or voice_client.is_paused()): # NOTE: If keep_looping and playing, prevent task reinvoke.
+        if self.keep_looping and (voice_client.is_playing() or voice_client.is_paused()): # NOTE: If keep_looping and playing, prevent task reinvoke.
             logger.debug("Already in loop.")
             return
         
-        keep_looping = True
-        if len(queue) == 0:
+        self.keep_looping = True
+        if len(self.queue) == 0:
             await ctx.defer()
             task = asyncio.create_task(self.generate_song(2))
             logger.debug("Waiting first generation task finish.")
@@ -369,10 +369,8 @@ class LofiTransformerPlayer(commands.Cog):
 
     @commands.hybrid_command(name="stop", description="Stop the playing audio.")
     async def _stop_media(self, ctx):
-        global queue
-        queue = []
-        global keep_looping
-        keep_looping = False
+        self.queue = []
+        self.keep_looping = False
         if not ctx.message.author.voice:
             await ctx.send("You are not connected to a voice channel.")
             return
@@ -385,18 +383,15 @@ class LofiTransformerPlayer(commands.Cog):
         await ctx.send("Stopped", ephemeral=True)
     
     async def stop_looping(self):
-        global keep_looping
-        if not keep_looping:
+        if not self.keep_looping:
             return
-        keep_looping = False
+        self.keep_looping = False
         logger.debug("Wait 2 sec to stop looping")
         await asyncio.sleep(2)
 
     async def generate_song(self, num_songs=5):
         """Generate the song asynchronously, store path in global queue."""
-        global queue
-
-        while(len(queue) < num_songs and keep_looping):
+        while(len(self.queue) < num_songs and self.keep_looping):
             logger.debug("Generating...")
             path = generate_song(
                 instrument=int(self.config["instrument"]),
@@ -406,14 +401,12 @@ class LofiTransformerPlayer(commands.Cog):
             )[0]
             logger.debug("Finished!")
             mid_path, mp3_path = path
-            queue.append(path)
+            self.queue.append(path)
 
     async def generate_song_task(self, ctx, num_songs=5):
-        global queue
-
-        while(keep_looping):
-            while(len(queue) >= num_songs):
-                if not keep_looping or not ctx.voice_client:
+        while self.keep_looping:
+            while(len(self.queue) >= num_songs):
+                if not self.keep_looping or not ctx.voice_client:
                     logger.debug("Quit from generate_song_task")
                     return
                 logger.debug("Queue full now.")
@@ -427,37 +420,47 @@ class LofiTransformerPlayer(commands.Cog):
             )[0]
             logger.debug("Finished!")
             mid_path, mp3_path = path
-            queue.append(path)
+            self.queue.append(path)
 
     async def play_loop(self, ctx):
-        global queue
-        global keep_looping
-
         if not ctx.message.author.voice:
             await ctx.send("You are not connected to a voice channel.")
-        elif len(queue) == 0:
+        elif len(self.queue) == 0:
             await ctx.send("Playing queue is empty.")
         else:
             await self.ensure_voice(ctx)
             voice_client = ctx.message.guild.voice_client
-            while queue and keep_looping:
+            while self.queue and self.keep_looping:
                 try:
                     while voice_client.is_playing() or voice_client.is_paused():
-                        logger.debug(f"Hi in loop. {queue}")
+                        logger.debug(f"Hi in loop. {self.queue}")
                         await asyncio.sleep(3)
                 except AttributeError:
                     logger.error("Attribute error.")
                 try:
-                    mid_path, mp3_path = queue[0]
+                    mid_path, mp3_path = self.queue[0]
+                    if not os.path.exists(mp3_path):
+                        logger.debug("mp3 file not exist, delete and play next.")
+                        del(self.queue[0])
+                        continue
                     logger.debug(f"Play song: {mp3_path} {get_audio_time(mp3_path)}")
                     source = discord.FFmpegPCMAudio(source=mp3_path)
+                    if ctx.voice_client == None:
+                        logger.warning(f"{Fore.YELLOW}voice_client == None{Fore.RESET}")
+                        break
                     ctx.voice_client.play(source, after=lambda e: logger.error(f'Player error: {e}') if e else None)
                     await asyncio.sleep(2)
-                    os.remove(mid_path)
-                    os.remove(mp3_path)
-                    del(queue[0])
+                    if os.path.exists(mid_path):
+                        os.remove(mid_path)
+                    else:
+                        logger.warning("mid file not exist.")
+                    if os.path.exists(mp3_path):
+                        os.remove(mp3_path)
+                    else:
+                        logger.warning("mp3 file not exist.")
+                    del(self.queue[0])
                 except Exception as e:
-                    logger.error(f"Got error in play section. \n{e}")
+                    logger.error(f"{Fore.RED}Got error in play section.{Fore.RESET}\n{e}")
                     break
 
 
