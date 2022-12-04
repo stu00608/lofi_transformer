@@ -6,10 +6,10 @@ LOGGING_CONFIG = {
     "disabled_existing_loggers": False, 
     "formatters":{
         "verbose":{
-            "format": "%(levelname)-6s - %(asctime)s - %(module)-15s : %(message)s"
+            "format": "%(levelname)-8s - %(asctime)s - %(module)-15s : %(message)s"
         },
         "standard":{
-            "format": "%(levelname)-6s - %(name)-20s : %(message)s"
+            "format": "%(levelname)-8s - %(name)-20s : %(message)s"
         }
     }, 
     "handlers":{
