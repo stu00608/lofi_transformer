@@ -42,6 +42,7 @@ class Bot(commands.Bot):
 
     async def on_ready(self):
         logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
+        os.makedirs("./loop_file", exist_ok=True)
         loop_files = glob("./loop_file/*")
         for f in loop_files:
             os.remove(f)
