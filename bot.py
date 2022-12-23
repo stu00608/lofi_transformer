@@ -32,7 +32,8 @@ class Bot(commands.Bot):
         )
 
         self.initial_extensions = [
-            "cogs.lofi_transformer_player"
+            "cogs.lofi_transformer_player",
+            "cogs.gpt3"
         ]
 
         self.day_avatar = "img/day_bocchi.jpg"
