@@ -3,4 +3,5 @@ __pycache__/
 exp/
 gen/
 wandb/
+loop_file/
 runtime_stats.json

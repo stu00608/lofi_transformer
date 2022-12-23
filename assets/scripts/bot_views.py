@@ -61,6 +61,7 @@ class Rating(discord.ui.View):
         self.is_stopped = False
         self.is_quitted = False
         self.is_replay = False
+        self.is_pick = False
         self.votable = votable
 
     async def interaction_check(self, inter: discord.MessageInteraction) -> bool:
@@ -124,6 +125,13 @@ class Rating(discord.ui.View):
         await interaction.response.defer()
         self.value = "placeholder"
         self.is_skipped = True
+        self.stop()
+
+    @discord.ui.button(label='Pick', style=discord.ButtonStyle.blurple)
+    async def _pick_song(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.value = "placeholder"
+        self.is_pick = True
         self.stop()
         
     @discord.ui.button(label='Replay', style=discord.ButtonStyle.grey)

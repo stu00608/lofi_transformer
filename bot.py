@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 from datetime import datetime
 import asyncio
 import assets.settings.setting as setting
+from glob import glob
 
 token = os.environ["BOT_TOKEN"]
 
@@ -25,7 +26,9 @@ class Bot(commands.Bot):
         super().__init__(
             command_prefix=commands.when_mentioned_or('!'), 
             intents=intents,
-            description=description
+            description=description,
+            activity=discord.Activity(type=discord.ActivityType.listening, name="後藤さんの呪いだわ..."),
+            status=discord.Status.online
         )
 
         self.initial_extensions = [
@@ -39,6 +42,11 @@ class Bot(commands.Bot):
 
     async def on_ready(self):
         logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
+        os.makedirs("./loop_file", exist_ok=True)
+        loop_files = glob("./loop_file/*")
+        for f in loop_files:
+            os.remove(f)
+        logger.info("Cleaned ./loop_file")
     
     async def setup_hook(self) -> None:
         self.update_avatar.start()
