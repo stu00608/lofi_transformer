@@ -167,6 +167,10 @@ class LofiTransformerPlayer(commands.Cog):
     @commands.hybrid_command(name="play", description="Generate a song!")
     async def _play(self, ctx, id=None):
         """Plays a file from the local filesystem"""
+        state = await self.ensure_voice(ctx)
+        if not state:
+            logger.debug("User not in a voice channel, quit play command.")
+            return
         await self.stop_looping()
         if id is None:
             instrument = self.config["instrument"]
@@ -468,7 +472,6 @@ class LofiTransformerPlayer(commands.Cog):
     def get_instrument_dropdown_view(self, ctx):
         return InstrumentSelectDropdownView(ctx.author)
 
-    @_play.before_invoke
     async def ensure_voice(self, ctx):
         if ctx.voice_client is None:
             if ctx.author.voice:
