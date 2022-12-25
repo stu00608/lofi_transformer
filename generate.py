@@ -106,7 +106,7 @@ def render_midi_to_mp3(mid_file_path, out_dir=".", instrument=0, mp3_file_path="
 
     os.remove(wav_file_path)
 
-    return mp3_file_path
+    return mid_file_path, mp3_file_path
 
 def generate(ckpt, out, instrument, display=True):
     """Inference a song and return its mid and mp3 path"""

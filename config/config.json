@@ -41,8 +41,43 @@
             "statistic_json_name": "song_stats.json",
             "gen_dir": "./gen/sixth_finetune_lofi85_L25",
             "emoji": "\ud83e\udd8b"
+        },
+        "light-paper-10-L8": {
+            "description": "LoFi180, seventh finetune, Loss 8.",
+            "ckpt_path": "./exp/seventh_finetune_lofi180/loss_8_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/seventh_finetune_lofi180_L8",
+            "emoji": "\ud83d\udca1"
+        },
+        "light-paper-10-L10": {
+            "description": "LoFi180, seventh finetune, Loss 10.",
+            "ckpt_path": "./exp/seventh_finetune_lofi180/loss_10_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/seventh_finetune_lofi180_L10",
+            "emoji": "\ud83d\udca1"
+        },
+        "light-paper-10-L15": {
+            "description": "LoFi180, seventh finetune, Loss 15.",
+            "ckpt_path": "./exp/seventh_finetune_lofi180/loss_15_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/seventh_finetune_lofi180_L15",
+            "emoji": "\ud83d\udca1"
+        },
+        "light-paper-10-L20": {
+            "description": "LoFi180, seventh finetune, Loss 20.",
+            "ckpt_path": "./exp/seventh_finetune_lofi180/loss_20_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/seventh_finetune_lofi180_L20",
+            "emoji": "\ud83d\udca1"
+        },
+        "light-paper-10-L25": {
+            "description": "LoFi180, seventh finetune, Loss 25.",
+            "ckpt_path": "./exp/seventh_finetune_lofi180/loss_25_params.pt",
+            "statistic_json_name": "song_stats.json",
+            "gen_dir": "./gen/seventh_finetune_lofi180_L25",
+            "emoji": "\ud83d\udca1"
         }
     },
-    "current_model": "vivid-butterfly-9-L15",
-    "instrument": 24
+    "current_model": "light-paper-10-L10",
+    "instrument": 4
 }
