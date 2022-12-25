@@ -55,13 +55,13 @@ def generate_mid(ckpt_path, out_dir="gen", verbose=True):
     filename = get_random_string(length=10)
     mid_file_path = os.path.join(out_dir, filename+".mid")
     # Get midi object.
-    midi_obj = make_midi(res, word2event)
+    midi_obj = make_midi(res, mid_file_path, word2event)
 
     # Only take first tempo change.
     # midi_obj.tempo_changes = midi_obj.tempo_changes[:2]
 
     # output midi.
-    midi_obj.dump(mid_file_path)
+    # midi_obj.dump(mid_file_path)
 
     return mid_file_path
 

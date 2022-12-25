@@ -285,10 +285,10 @@ class LofiTransformerPlayer(commands.Cog):
             if complete_id not in self.filedict.keys():
                 hint_msg = await ctx.send(f"Rendering file to {get_instrument_emoji(instrument)}...")
                 path = render_midi_to_mp3(
-                    mid_file_path=self.out_dir+code+".mid",
+                    mid_file_path=os.path.join(self.out_dir, code+".mid"),
                     out_dir=self.out_dir,
                     instrument=instrument,
-                    mp3_file_path=self.out_dir+code+f"_{instrument}"+".mp3"
+                    mp3_file_path=os.path.join(self.out_dir, code+f"_{instrument}.mp3")
                 )
                 mid_path, mp3_path = path
                 await self.update_dict(ctx)
